@@ -57,7 +57,7 @@ export default class GenerateRollbackRequestsFactory {
         let expectedResult: any = {};
         if (operation === 'create' || operation === 'update') {
             expectedResult = {
-                transactionRequests: [DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10))],
+                transactionRequests: [DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10), '')],
                 itemsToRemoveFromLock: [
                     {
                         id,

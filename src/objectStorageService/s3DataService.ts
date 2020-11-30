@@ -64,7 +64,11 @@ export class S3DataService implements Persistence {
         try {
             presignedPutUrlResponse = await S3ObjectStorageService.getPresignedPutUrl(fileName);
         } catch (e) {
-            await this.dbPersistenceService.deleteResource({ resourceType: request.resourceType, id: resource.id });
+            await this.dbPersistenceService.deleteResource({
+                resourceType: request.resourceType,
+                id: resource.id,
+                tenantId: request.tenantId,
+            });
             throw e;
         }
 
@@ -93,7 +97,11 @@ export class S3DataService implements Persistence {
             presignedPutUrlResponse = await S3ObjectStorageService.getPresignedPutUrl(fileName);
         } catch (e) {
             // TODO make this an update
-            await this.dbPersistenceService.deleteResource({ resourceType: request.resourceType, id: resource.id });
+            await this.dbPersistenceService.deleteResource({
+                resourceType: request.resourceType,
+                id: resource.id,
+                tenantId: request.tenantId,
+            });
             throw e;
         }
 

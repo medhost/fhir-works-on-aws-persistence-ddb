@@ -12,7 +12,7 @@ const AWSWithXray = AWSXRay.captureAWS(AWS);
 const { IS_OFFLINE } = process.env;
 if (IS_OFFLINE === 'true') {
     AWS.config.update({
-        region: 'us-west-2',
+        region: 'us-east-1',
         accessKeyId: process.env.ACCESS_KEY,
         secretAccessKey: process.env.SECRET_KEY,
     });

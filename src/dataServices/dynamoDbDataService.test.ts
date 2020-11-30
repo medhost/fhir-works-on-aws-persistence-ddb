@@ -21,7 +21,7 @@ AWSMock.setSDKInstance(AWS);
 // eslint-disable-next-line import/order
 import sinon = require('sinon');
 
-describe('CREATE', () => {
+describe('CREATE with default tenant', () => {
     afterEach(() => {
         AWSMock.restore();
     });
@@ -47,8 +47,10 @@ describe('CREATE', () => {
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
+        const tenantId = '';
+
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.createResource({ resource, resourceType, id });
+        const serviceResponse = await dynamoDbDataService.createResource({ resource, resourceType, id, tenantId });
 
         // CHECK
         const expectedResource: any = { ...resource };
@@ -63,7 +65,7 @@ describe('CREATE', () => {
     });
 });
 
-describe('READ', () => {
+describe('READ with default tenant', () => {
     // beforeEach(() => {
     //     // Ensures that for each test, we test the assertions in the catch block
     //     expect.hasAssertions();
@@ -91,10 +93,11 @@ describe('READ', () => {
             .stub(DynamoDbHelper.prototype, 'getMostRecentValidResource')
             .returns(Promise.resolve({ message: 'Resource found', resource }));
 
-        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+        const tenantId = '';
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.readResource({ resourceType, id });
+        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+        const serviceResponse = await dynamoDbDataService.readResource({ resourceType, id, tenantId });
 
         // CHECK
         expect(serviceResponse.message).toEqual('Resource found');
@@ -128,8 +131,10 @@ describe('READ', () => {
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB({ apiVersion: '2012-08-10' }));
 
+        const tenantId = '';
+
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.vReadResource({ resourceType, id, vid });
+        const serviceResponse = await dynamoDbDataService.vReadResource({ resourceType, id, vid, tenantId });
 
         // CHECK
         expect(serviceResponse.message).toEqual('Resource found');
@@ -150,10 +155,11 @@ describe('READ', () => {
             callback(null, { Item: undefined });
         });
 
+        const tenantId = '';
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
         try {
             // OPERATE
-            await dynamoDbDataService.vReadResource({ resourceType, id, vid });
+            await dynamoDbDataService.vReadResource({ resourceType, id, vid, tenantId });
         } catch (e) {
             // CHECK
             expect(e).toMatchObject(new ResourceVersionNotFoundError(resourceType, id, vid));
@@ -161,12 +167,12 @@ describe('READ', () => {
     });
 });
 
-describe('UPDATE', () => {
+describe('UPDATE with default tenant', () => {
     afterEach(() => {
         AWSMock.restore();
     });
 
-    test('Successfully update resource', async () => {
+    test('Successfully update resource ', async () => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const resource = {
@@ -211,9 +217,15 @@ describe('UPDATE', () => {
             .returns(Promise.resolve(batchReadWriteServiceResponse));
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+        const tenantId = '';
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+        const serviceResponse = await dynamoDbDataService.updateResource({
+            resourceType: 'Patient',
+            id,
+            resource,
+            tenantId,
+        });
 
         // CHECK
         const expectedResource: any = { ...resource };
@@ -228,7 +240,7 @@ describe('UPDATE', () => {
     });
 });
 
-describe('DELETE', () => {
+describe('DELETE with default tenant', () => {
     afterEach(() => {
         AWSMock.restore();
     });
@@ -266,9 +278,10 @@ describe('DELETE', () => {
         });
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+        const tenantId = '';
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.deleteResource({ resourceType, id });
+        const serviceResponse = await dynamoDbDataService.deleteResource({ resourceType, id, tenantId });
 
         // CHECK
         expect(serviceResponse.success).toEqual(true);

@@ -47,7 +47,7 @@ export class DynamoDbDataService implements Persistence {
     }
 
     async readResource(request: ReadResourceRequest): Promise<GenericResponse> {
-        return this.dynamoDbHelper.getMostRecentValidResource(request.resourceType, request.id);
+        return this.dynamoDbHelper.getMostRecentValidResource(request.resourceType, request.id, request.tenantId);
     }
 
     async vReadResource(request: vReadResourceRequest): Promise<GenericResponse> {
