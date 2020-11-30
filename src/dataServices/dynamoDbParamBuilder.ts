@@ -53,9 +53,14 @@ export default class DynamoDbParamBuilder {
         return params;
     }
 
-    static buildGetResourcesQueryParam(id: string, maxNumberOfVersions: number, projectionExpression?: string) {
+    static buildGetResourcesQueryParam(
+        id: string,
+        maxNumberOfVersions: number,
+        tenantId: string,
+        projectionExpression?: string,
+    ) {
         const params: any = {
-            TableName: RESOURCE_TABLE,
+            TableName: RESOURCE_TABLE + tenantId,
             ScanIndexForward: false,
             Limit: maxNumberOfVersions,
             KeyConditionExpression: 'id = :hkey',
@@ -71,10 +76,10 @@ export default class DynamoDbParamBuilder {
         return params;
     }
 
-    static buildDeleteParam(id: string, vid: number) {
+    static buildDeleteParam(id: string, vid: number, tenantId: string) {
         const params: any = {
             Delete: {
-                TableName: RESOURCE_TABLE,
+                TableName: RESOURCE_TABLE + tenantId,
                 Key: DynamoDBConverter.marshall({
                     id,
                     vid,
@@ -85,9 +90,9 @@ export default class DynamoDbParamBuilder {
         return params;
     }
 
-    static buildGetItemParam(id: string, vid: number) {
+    static buildGetItemParam(id: string, vid: number, tenantId: string) {
         return {
-            TableName: RESOURCE_TABLE,
+            TableName: RESOURCE_TABLE + tenantId,
             Key: DynamoDBConverter.marshall({
                 id,
                 vid,
@@ -95,10 +100,10 @@ export default class DynamoDbParamBuilder {
         };
     }
 
-    static buildPutAvailableItemParam(item: any, id: string, vid: number) {
+    static buildPutAvailableItemParam(item: any, id: string, vid: number, tenantId: string) {
         const newItem = DynamoDbUtil.prepItemForDdbInsert(item, id, vid, DOCUMENT_STATUS.AVAILABLE);
         return {
-            TableName: RESOURCE_TABLE,
+            TableName: RESOURCE_TABLE + tenantId,
             Item: DynamoDBConverter.marshall(newItem),
         };
     }
