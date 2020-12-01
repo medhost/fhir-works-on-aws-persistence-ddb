@@ -133,7 +133,7 @@ describe('buildUpdateDocumentStatusParam', () => {
 });
 
 describe('buildPutItemParam', () => {
-    test('check that param has the fields documentStatus and lockEndTs', () => {
+    test('check that param has the fields documentStatus and lockEndTs with default tenant', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
         const item = {
@@ -151,7 +151,8 @@ describe('buildPutItemParam', () => {
                 versionId: vid.toString(),
             },
         };
-        const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid);
+        const tenantId = '';
+        const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
         const expectedParams = {
             TableName: '',
             Item: {
@@ -205,5 +206,113 @@ describe('buildPutItemParam', () => {
         };
 
         expect(actualParams).toEqual(expectedParams);
+    });
+    test('check that param has the fields documentStatus and lockEndTs with custom tenant', () => {
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const vid = 1;
+        const item = {
+            resourceType: 'Patient',
+            id,
+            name: [
+                {
+                    family: 'Jameson',
+                    given: ['Matt'],
+                },
+            ],
+            gender: 'male',
+            meta: {
+                lastUpdated: '2020-03-26T15:46:55.848Z',
+                versionId: vid.toString(),
+            },
+        };
+        const tenantId = '-123';
+        const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
+        const expectedParams = {
+            TableName: '-123',
+            Item: {
+                resourceType: {
+                    S: 'Patient',
+                },
+                id: {
+                    S: id,
+                },
+                vid: {
+                    N: vid.toString(),
+                },
+                name: {
+                    L: [
+                        {
+                            M: {
+                                family: {
+                                    S: 'Jameson',
+                                },
+                                given: {
+                                    L: [
+                                        {
+                                            S: 'Matt',
+                                        },
+                                    ],
+                                },
+                            },
+                        },
+                    ],
+                },
+                gender: {
+                    S: 'male',
+                },
+                meta: {
+                    M: {
+                        lastUpdated: {
+                            S: '2020-03-26T15:46:55.848Z',
+                        },
+                        versionId: {
+                            S: '1',
+                        },
+                    },
+                },
+                documentStatus: {
+                    S: 'AVAILABLE',
+                },
+                lockEndTs: {
+                    N: expect.stringMatching(timeFromEpochInMsRegExp),
+                },
+            },
+        };
+
+        expect(actualParams).toEqual(expectedParams);
+    });
+});
+
+describe('Multi-tenancy in DynamoDB', () => {
+    test('buildPutAvailableItemParam', () => {
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const vid = 1;
+        const item = {};
+        const tenantId = '-123';
+        const result = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
+        expect(result.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+    });
+    test('buildGetItemParam', () => {
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const vid = 1;
+        const tenantId = '-123';
+        const result = DynamoDbParamBuilder.buildGetItemParam(id, vid, tenantId);
+        expect(result.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+    });
+
+    test('buildDeleteParam', () => {
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const vid = 1;
+        const tenantId = '-123';
+        const result = DynamoDbParamBuilder.buildDeleteParam(id, vid, tenantId);
+        expect(result.Delete.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+    });
+
+    test('buildGetResourcesQueryParam', () => {
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const vid = 1;
+        const tenantId = '-123';
+        const result = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, vid, tenantId);
+        expect(result.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
     });
 });

@@ -74,12 +74,12 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
     }
 
     async readResource(request: ReadResourceRequest): Promise<GenericResponse> {
-        return this.dynamoDbHelper.getMostRecentValidResource(request.resourceType, request.id);
+        return this.dynamoDbHelper.getMostRecentValidResource(request.resourceType, request.id, request.tenantId);
     }
 
     async vReadResource(request: vReadResourceRequest): Promise<GenericResponse> {
-        const { resourceType, id, vid } = request;
-        const params = DynamoDbParamBuilder.buildGetItemParam(id, parseInt(vid, 10));
+        const { resourceType, id, vid, tenantId } = request;
+        const params = DynamoDbParamBuilder.buildGetItemParam(id, parseInt(vid, 10), tenantId);
         const result = await this.dynamoDb.getItem(params).promise();
         if (result.Item === undefined) {
             throw new ResourceVersionNotFoundError(resourceType, id, vid);
@@ -93,13 +93,13 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
     }
 
     async createResource(request: CreateResourceRequest) {
-        const { resourceType, resource, id } = request;
+        const { resourceType, resource, id, tenantId } = request;
         const vid = 1;
         let item = resource;
         item.resourceType = resourceType;
         item.meta = generateMeta(vid.toString());
 
-        const params = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id || uuidv4(), vid);
+        const params = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id || uuidv4(), vid, tenantId);
         await this.dynamoDb.putItem(params).promise();
         const newItem = DynamoDBConverter.unmarshall(params.Item);
         item = DynamoDbUtil.cleanItem(newItem);
@@ -111,8 +111,8 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
     }
 
     async deleteResource(request: DeleteResourceRequest) {
-        const { resourceType, id } = request;
-        const itemServiceResponse = await this.readResource({ resourceType, id });
+        const { resourceType, id, tenantId } = request;
+        const itemServiceResponse = await this.readResource({ resourceType, id, tenantId });
 
         const { versionId } = itemServiceResponse.resource.meta;
 
@@ -134,9 +134,9 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
     }
 
     async updateResource(request: UpdateResourceRequest) {
-        const { resource, resourceType, id } = request;
+        const { resource, resourceType, id, tenantId } = request;
         const resourceCopy = { ...resource };
-        const getResponse = await this.readResource({ resourceType, id });
+        const getResponse = await this.readResource({ resourceType, id, tenantId });
         const currentVId: number = getResponse.resource.meta
             ? parseInt(getResponse.resource.meta.versionId, 10) || 0
             : 0;

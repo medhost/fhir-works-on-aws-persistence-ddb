@@ -174,7 +174,7 @@ export default class DynamoDbBundleServiceHelper {
     }
 
     private static generateDeleteLatestRecordAndItemToRemoveFromLock(resourceType: string, id: string, vid: string) {
-        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10));
+        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10), ''); // TODO add tenantID support for bundle requests
         const itemToRemoveFromLock = {
             id,
             vid,
