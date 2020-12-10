@@ -225,7 +225,7 @@ describe('buildPutItemParam', () => {
                 versionId: vid.toString(),
             },
         };
-        const tenantId = '-123';
+        const tenantId = '123';
         const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
         const expectedParams = {
             TableName: '-123',
@@ -288,31 +288,35 @@ describe('Multi-tenancy in DynamoDB', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
         const item = {};
-        const tenantId = '-123';
+        const tenantId = '123';
+        const tableName = '-123';
         const result = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
-        expect(result.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+        expect(result.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
     });
     test('buildGetItemParam', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
-        const tenantId = '-123';
+        const tenantId = '123';
+        const tableName = '-123';
         const result = DynamoDbParamBuilder.buildGetItemParam(id, vid, tenantId);
-        expect(result.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+        expect(result.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
     });
 
     test('buildDeleteParam', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
-        const tenantId = '-123';
+        const tenantId = '123';
+        const tableName = '-123';
         const result = DynamoDbParamBuilder.buildDeleteParam(id, vid, tenantId);
-        expect(result.Delete.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+        expect(result.Delete.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
     });
 
     test('buildGetResourcesQueryParam', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
-        const tenantId = '-123';
+        const tenantId = '123';
+        const tableName = '-123';
         const result = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, vid, tenantId);
-        expect(result.TableName).toEqual(tenantId); // RESOURCE_TABLE is ''
+        expect(result.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
     });
 });
