@@ -15,6 +15,7 @@ const REMOVE = 'REMOVE';
 
 export async function handleDdbToEsEvent(event: any) {
     const ddbToEsHelper = new DdbToEsHelper();
+    const { RESOURCE_TENANT } = process.env;
     try {
         const promiseParamAndIds: PromiseParamAndId[] = [];
         for (let i = 0; i < event.Records.length; i += 1) {
@@ -29,10 +30,11 @@ export async function handleDdbToEsEvent(event: any) {
                 // eslint-disable-next-line no-continue
                 continue;
             }
+            console.log('Tenant Id: ', RESOURCE_TENANT);
 
-            const lowercaseResourceType = image.resourceType.toLowerCase();
+            const resourceType = RESOURCE_TENANT ? `${RESOURCE_TENANT}-${image.resourceType}` : image.resourceType;
             // eslint-disable-next-line no-await-in-loop
-            await ddbToEsHelper.createIndexIfNotExist(lowercaseResourceType);
+            await ddbToEsHelper.createIndexIfNotExist(resourceType.toLowerCase());
             if (record.eventName === REMOVE) {
                 // If a user manually deletes a record from DDB, let's delete it from ES also
                 const idAndDeletePromise = ddbToEsHelper.getDeleteRecordPromiseParam(image);
