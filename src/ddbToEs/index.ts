@@ -15,13 +15,18 @@ const REMOVE = 'REMOVE';
 
 export async function handleDdbToEsEvent(event: any) {
     const ddbToEsHelper = new DdbToEsHelper();
-    const { RESOURCE_TENANT } = process.env;
+    const { MULTI_TENANT } = process.env;
     try {
         const promiseParamAndIds: PromiseParamAndId[] = [];
         for (let i = 0; i < event.Records.length; i += 1) {
             const record = event.Records[i];
             console.log('EventName: ', record.eventName);
-
+            let tenantId = '';
+            if (MULTI_TENANT && MULTI_TENANT.toLowerCase() === 'true') {
+                const eventSourceTable = record.eventSourceARN.split('table/').pop().split('/')[0];
+                tenantId = eventSourceTable.split('-').pop();
+                console.log('Tenant Id: ', tenantId);
+            }
             const ddbJsonImage = record.eventName === REMOVE ? record.dynamodb.OldImage : record.dynamodb.NewImage;
             const image = AWS.DynamoDB.Converter.unmarshall(ddbJsonImage);
             // Don't index binary files
@@ -30,9 +35,8 @@ export async function handleDdbToEsEvent(event: any) {
                 // eslint-disable-next-line no-continue
                 continue;
             }
-            console.log('Tenant Id: ', RESOURCE_TENANT);
 
-            const resourceType = RESOURCE_TENANT ? `${RESOURCE_TENANT}-${image.resourceType}` : image.resourceType;
+            const resourceType = tenantId ? `${tenantId}-${image.resourceType}` : image.resourceType;
             // eslint-disable-next-line no-await-in-loop
             await ddbToEsHelper.createIndexIfNotExist(resourceType.toLowerCase());
             if (record.eventName === REMOVE) {
