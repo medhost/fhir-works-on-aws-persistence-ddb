@@ -23,8 +23,7 @@ export async function handleDdbToEsEvent(event: any) {
             console.log('EventName: ', record.eventName);
             let tenantId = '';
             if (MULTI_TENANT && MULTI_TENANT.toLowerCase() === 'true') {
-                const eventSourceTable = record.eventSourceARN.split('table/').pop().split('/')[0];
-                tenantId = eventSourceTable.split('-').pop();
+                tenantId = ddbToEsHelper.parseTenantIdFromArn(record.eventSourceARN);
                 console.log('Tenant Id: ', tenantId);
             }
             const ddbJsonImage = record.eventName === REMOVE ? record.dynamodb.OldImage : record.dynamodb.NewImage;
