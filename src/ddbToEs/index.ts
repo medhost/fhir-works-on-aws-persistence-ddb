@@ -15,12 +15,17 @@ const REMOVE = 'REMOVE';
 
 export async function handleDdbToEsEvent(event: any) {
     const ddbToEsHelper = new DdbToEsHelper();
+    const { MULTI_TENANT } = process.env;
     try {
         const promiseParamAndIds: PromiseParamAndId[] = [];
         for (let i = 0; i < event.Records.length; i += 1) {
             const record = event.Records[i];
             console.log('EventName: ', record.eventName);
-
+            let tenantId = '';
+            if (MULTI_TENANT && MULTI_TENANT.toLowerCase() === 'true') {
+                tenantId = ddbToEsHelper.parseTenantIdFromArn(record.eventSourceARN);
+                console.log('Tenant Id: ', tenantId);
+            }
             const ddbJsonImage = record.eventName === REMOVE ? record.dynamodb.OldImage : record.dynamodb.NewImage;
             const image = AWS.DynamoDB.Converter.unmarshall(ddbJsonImage);
             // Don't index binary files
@@ -30,9 +35,9 @@ export async function handleDdbToEsEvent(event: any) {
                 continue;
             }
 
-            const lowercaseResourceType = image.resourceType.toLowerCase();
+            const resourceType = tenantId ? `${tenantId}-${image.resourceType}` : image.resourceType;
             // eslint-disable-next-line no-await-in-loop
-            await ddbToEsHelper.createIndexIfNotExist(lowercaseResourceType);
+            await ddbToEsHelper.createIndexIfNotExist(resourceType.toLowerCase());
             if (record.eventName === REMOVE) {
                 // If a user manually deletes a record from DDB, let's delete it from ES also
                 const idAndDeletePromise = ddbToEsHelper.getDeleteRecordPromiseParam(image);

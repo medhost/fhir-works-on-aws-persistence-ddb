@@ -22,7 +22,8 @@ export default class DynamoDbHelper {
         id: string,
         projectionExpression?: string,
     ): Promise<GenericResponse> {
-        const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 1, projectionExpression);
+        const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 1, '', projectionExpression);
+        // TODO add tenantID support for bundle requests
 
         const result = await this.dynamoDb.query(params).promise();
         if (result.Items === undefined || result.Items.length === 0) {
@@ -37,8 +38,8 @@ export default class DynamoDbHelper {
         };
     }
 
-    async getMostRecentValidResource(resourceType: string, id: string): Promise<GenericResponse> {
-        const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 2);
+    async getMostRecentValidResource(resourceType: string, id: string, tenantId: string): Promise<GenericResponse> {
+        const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 2, tenantId);
         let item = null;
         const result = await this.dynamoDb.query(params).promise();
         const items = result.Items
