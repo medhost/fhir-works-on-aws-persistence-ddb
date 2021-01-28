@@ -174,6 +174,7 @@ export class DynamoDbBundleService implements Bundle {
                 return await this.dynamoDbHelper.getMostRecentResource(
                     itemToLock.resourceType,
                     itemToLock.id,
+                    tenantId,
                     projectionExpression,
                 );
             } catch (e) {
