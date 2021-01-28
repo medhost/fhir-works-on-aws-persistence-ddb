@@ -20,10 +20,10 @@ export default class DynamoDbHelper {
     async getMostRecentResource(
         resourceType: string,
         id: string,
+        tenantId: string,
         projectionExpression?: string,
     ): Promise<GenericResponse> {
-        const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 1, '', projectionExpression);
-        // TODO add tenantID support for bundle requests
+        const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 1, tenantId, projectionExpression);
 
         const result = await this.dynamoDb.query(params).promise();
         if (result.Items === undefined || result.Items.length === 0) {

@@ -116,15 +116,16 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
 
         const { versionId } = itemServiceResponse.resource.meta;
 
-        return this.deleteVersionedResource(resourceType, id, parseInt(versionId, 10));
+        return this.deleteVersionedResource(resourceType, id, parseInt(versionId, 10), tenantId);
     }
 
-    async deleteVersionedResource(resourceType: string, id: string, vid: number) {
+    async deleteVersionedResource(resourceType: string, id: string, vid: number, tenantId: string) {
         const updateStatusToDeletedParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
             DOCUMENT_STATUS.AVAILABLE,
             DOCUMENT_STATUS.DELETED,
             id,
             vid,
+            tenantId,
         ).Update;
         await this.dynamoDb.updateItem(updateStatusToDeletedParam).promise();
         return {
@@ -153,10 +154,13 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
         let item: any = {};
         // Sending the request to `atomicallyReadWriteResources` to take advantage of LOCKING management handled by
         // that method
-        const response: BundleResponse = await this.transactionService.transaction({
-            requests: [batchRequest],
-            startTime: new Date(),
-        });
+        const response: BundleResponse = await this.transactionService.transaction(
+            {
+                requests: [batchRequest],
+                startTime: new Date(),
+            },
+            tenantId,
+        );
         item = clone(resource);
         const batchReadWriteEntryResponse = response.batchReadWriteResponses[0];
         item.meta = generateMeta(batchReadWriteEntryResponse.vid, new Date(batchReadWriteEntryResponse.lastModified));

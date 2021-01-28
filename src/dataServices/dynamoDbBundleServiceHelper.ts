@@ -24,7 +24,11 @@ export interface ItemRequest {
 }
 
 export default class DynamoDbBundleServiceHelper {
-    static generateStagingRequests(requests: BatchReadWriteRequest[], idToVersionId: Record<string, number>) {
+    static generateStagingRequests(
+        requests: BatchReadWriteRequest[],
+        idToVersionId: Record<string, number>,
+        tenantId: string,
+    ) {
         const deleteRequests: any = [];
         const createRequests: any = [];
         const updateRequests: any = [];
@@ -46,7 +50,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     createRequests.push({
                         Put: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -70,7 +74,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     updateRequests.push({
                         Put: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -96,6 +100,7 @@ export default class DynamoDbBundleServiceHelper {
                             DOCUMENT_STATUS.PENDING_DELETE,
                             id,
                             vid,
+                            tenantId,
                         ),
                     );
                     newBundleEntryResponses.push({
@@ -114,7 +119,7 @@ export default class DynamoDbBundleServiceHelper {
                     const vid = idToVersionId[id];
                     readRequests.push({
                         Get: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                             Key: DynamoDBConverter.marshall({
                                 id,
                                 vid,
