@@ -132,8 +132,8 @@ describe('buildUpdateDocumentStatusParam', () => {
     });
 });
 
-describe('buildPutItemParam', () => {
-    test('check that param has the fields documentStatus and lockEndTs with default tenant', () => {
+describe('buildPutAvailableItemParam', () => {
+    test('check that param has the fields documentStatus, lockEndTs, and references  with default tenant', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
         const item = {
@@ -156,6 +156,9 @@ describe('buildPutItemParam', () => {
         const expectedParams = {
             TableName: '',
             Item: {
+                _references: {
+                    L: [],
+                },
                 resourceType: {
                     S: 'Patient',
                 },

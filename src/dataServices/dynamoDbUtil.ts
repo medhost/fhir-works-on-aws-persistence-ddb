@@ -4,6 +4,7 @@
  */
 
 import { clone, generateMeta } from 'fhir-works-on-aws-interface';
+import flatten from 'flat';
 import { SEPARATOR } from '../constants';
 import DOCUMENT_STATUS from './documentStatus';
 
@@ -11,6 +12,7 @@ export const DOCUMENT_STATUS_FIELD = 'documentStatus';
 export const LOCK_END_TS_FIELD = 'lockEndTs';
 export const EXTERNAL_ID_FIELD = 'externalId';
 export const VID_FIELD = 'vid';
+export const REFERENCES_FIELD = '_references';
 
 export class DynamoDbUtil {
     static cleanItem(item: any) {
@@ -19,6 +21,7 @@ export class DynamoDbUtil {
         delete cleanedItem[DOCUMENT_STATUS_FIELD];
         delete cleanedItem[LOCK_END_TS_FIELD];
         delete cleanedItem[VID_FIELD];
+        delete cleanedItem[REFERENCES_FIELD];
         delete cleanedItem[EXTERNAL_ID_FIELD];
 
         // Return id instead of full id (this is only a concern in results from ES)
@@ -42,6 +45,19 @@ export class DynamoDbUtil {
         item[DOCUMENT_STATUS_FIELD] = documentStatus;
         item[LOCK_END_TS_FIELD] = Date.now();
         item[EXTERNAL_ID_FIELD] = id;
+
+        // Format of flattenedResource
+        // https://www.npmjs.com/package/flat
+        // flatten({ key1: { keyA: 'valueI' } })  => { key1.keyA: 'valueI'}
+        const flattenedResources: Record<string, string> = flatten(resource);
+        const references = Object.keys(flattenedResources)
+            .filter((key: string) => {
+                return key.endsWith('.reference');
+            })
+            .map((key: string) => {
+                return flattenedResources[key];
+            });
+        item[REFERENCES_FIELD] = references;
         return item;
     }
 }

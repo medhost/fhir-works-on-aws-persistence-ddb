@@ -40,10 +40,10 @@ export async function handleDdbToEsEvent(event: any) {
             await ddbToEsHelper.createIndexIfNotExist(resourceType.toLowerCase());
             if (record.eventName === REMOVE) {
                 // If a user manually deletes a record from DDB, let's delete it from ES also
-                const idAndDeletePromise = ddbToEsHelper.getDeleteRecordPromiseParam(image);
+                const idAndDeletePromise = ddbToEsHelper.getDeleteRecordPromiseParam(image, resourceType.toLowerCase());
                 promiseParamAndIds.push(idAndDeletePromise);
             } else {
-                const idAndUpsertPromise = ddbToEsHelper.getUpsertRecordPromiseParam(image);
+                const idAndUpsertPromise = ddbToEsHelper.getUpsertRecordPromiseParam(image, resourceType.toLowerCase());
                 if (idAndUpsertPromise) {
                     promiseParamAndIds.push(idAndUpsertPromise);
                 }
