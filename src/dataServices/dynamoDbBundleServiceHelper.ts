@@ -50,7 +50,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     createRequests.push({
                         Put: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -74,7 +74,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     updateRequests.push({
                         Put: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -119,7 +119,7 @@ export default class DynamoDbBundleServiceHelper {
                     const vid = idToVersionId[id];
                     readRequests.push({
                         Get: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                             Key: DynamoDBConverter.marshall({
                                 id,
                                 vid,
