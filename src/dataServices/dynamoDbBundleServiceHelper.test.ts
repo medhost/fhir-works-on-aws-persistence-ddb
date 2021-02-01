@@ -14,7 +14,7 @@ describe('generateStagingRequests', () => {
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('CREATE for tenant %s', (tenantId, tableName) => {
+    ]).test('CREATE for tenant "%s"', (tenantId, tableName) => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getCreate(tableName).request],
             GenerateStagingRequestsFactory.getCreate(tableName).idToVersionId,
@@ -34,7 +34,7 @@ describe('generateStagingRequests', () => {
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('READ for tenant %s', (tenantId, tableName) => {
+    ]).test('READ for tenant "%s"', (tenantId, tableName) => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getRead(tableName).request],
             GenerateStagingRequestsFactory.getRead(tableName).idToVersionId,
@@ -54,7 +54,7 @@ describe('generateStagingRequests', () => {
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('UPDATE for tenant %s', (tenantId, tableName) => {
+    ]).test('UPDATE for tenant "%s"', (tenantId, tableName) => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getUpdate(tableName).request],
             GenerateStagingRequestsFactory.getUpdate(tableName).idToVersionId,
@@ -72,7 +72,7 @@ describe('generateStagingRequests', () => {
 
         expect(actualResult).toMatchObject(expectedResult);
     });
-    each(['', 'custom-tenant']).test('DELETE for tenant %s', tenantId => {
+    each(['', 'custom-tenant']).test('DELETE for tenant "%s"', tenantId => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getDelete(tenantId).request],
             GenerateStagingRequestsFactory.getDelete(tenantId).idToVersionId,
@@ -93,7 +93,7 @@ describe('generateStagingRequests', () => {
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('CRUD for tenant %s', (tenantId, tableName) => {
+    ]).test('CRUD for tenant "%s"', (tenantId, tableName) => {
         let idToVersionId: Record<string, number> = {};
         idToVersionId = {
             ...GenerateStagingRequestsFactory.getRead(tableName).idToVersionId,
