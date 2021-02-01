@@ -49,7 +49,7 @@ export class DynamoDbBundleService implements Bundle {
     }
 
     async transaction(request: TransactionRequest): Promise<BundleResponse> {
-        const { requests, startTime } = request;
+        const { requests, startTime, tenantId } = request;
         if (requests.length === 0) {
             return {
                 success: true,
@@ -59,13 +59,13 @@ export class DynamoDbBundleService implements Bundle {
         }
 
         // 1. Put a lock on all requests
-        const lockItemsResponse = await this.lockItems(requests);
+        const lockItemsResponse = await this.lockItems(requests, tenantId);
         const { successfulLock } = lockItemsResponse;
         let { lockedItems } = lockItemsResponse;
 
         let elapsedTimeInMs = this.getElapsedTime(startTime);
         if (elapsedTimeInMs > this.maxExecutionTimeMs || !successfulLock) {
-            await this.unlockItems(lockedItems, true);
+            await this.unlockItems(lockedItems, true, tenantId);
             if (elapsedTimeInMs > this.maxExecutionTimeMs) {
                 console.log(
                     'Locks were rolled back because elapsed time is longer than max code execution time. Elapsed time',
@@ -89,7 +89,7 @@ export class DynamoDbBundleService implements Bundle {
         }
 
         // 2.  Stage resources
-        const stageItemResponse = await this.stageItems(requests, lockedItems);
+        const stageItemResponse = await this.stageItems(requests, lockedItems, tenantId);
         const { batchReadWriteResponses } = stageItemResponse;
         const successfullyStageItems = stageItemResponse.success;
         lockedItems = stageItemResponse.lockedItems;
@@ -97,7 +97,7 @@ export class DynamoDbBundleService implements Bundle {
         elapsedTimeInMs = this.getElapsedTime(startTime);
         if (elapsedTimeInMs > this.maxExecutionTimeMs || !successfullyStageItems) {
             lockedItems = await this.rollbackItems(batchReadWriteResponses, lockedItems);
-            await this.unlockItems(lockedItems, true);
+            await this.unlockItems(lockedItems, true, tenantId);
 
             if (elapsedTimeInMs > this.maxExecutionTimeMs) {
                 console.log(
@@ -121,7 +121,7 @@ export class DynamoDbBundleService implements Bundle {
         }
 
         // 3. unlockItems
-        await this.unlockItems(lockedItems, false);
+        await this.unlockItems(lockedItems, false, tenantId);
 
         return {
             success: true,
@@ -132,6 +132,7 @@ export class DynamoDbBundleService implements Bundle {
 
     private async lockItems(
         requests: BatchReadWriteRequest[],
+        tenantId: string,
     ): Promise<{
         successfulLock: boolean;
         errorType?: BatchReadWriteErrorType;
@@ -173,6 +174,7 @@ export class DynamoDbBundleService implements Bundle {
                 return await this.dynamoDbHelper.getMostRecentResource(
                     itemToLock.resourceType,
                     itemToLock.id,
+                    tenantId,
                     projectionExpression,
                 );
             } catch (e) {
@@ -228,6 +230,7 @@ export class DynamoDbBundleService implements Bundle {
                     DOCUMENT_STATUS.LOCKED,
                     id,
                     vid,
+                    tenantId,
                 ),
             );
         }
@@ -270,6 +273,7 @@ export class DynamoDbBundleService implements Bundle {
     private async unlockItems(
         lockedItems: ItemRequest[],
         rollBack: boolean,
+        tenantId: string,
     ): Promise<{ successfulUnlock: boolean; locksFailedToRelease: ItemRequest[] }> {
         if (lockedItems.length === 0) {
             return { successfulUnlock: true, locksFailedToRelease: [] };
@@ -292,6 +296,7 @@ export class DynamoDbBundleService implements Bundle {
                 newStatus,
                 lockedItem.id,
                 lockedItem.vid || 0,
+                tenantId,
             );
         });
 
@@ -367,7 +372,7 @@ export class DynamoDbBundleService implements Bundle {
         return Object.values(fullIdToLockedItem);
     }
 
-    private async stageItems(requests: BatchReadWriteRequest[], lockedItems: ItemRequest[]) {
+    private async stageItems(requests: BatchReadWriteRequest[], lockedItems: ItemRequest[], tenantId: string) {
         console.log('Start Staging of Items');
 
         const idToVersionId: Record<string, number> = {};
@@ -382,7 +387,7 @@ export class DynamoDbBundleService implements Bundle {
             readRequests,
             newLocks,
             newStagingResponses,
-        } = DynamoDbBundleServiceHelper.generateStagingRequests(requests, idToVersionId);
+        } = DynamoDbBundleServiceHelper.generateStagingRequests(requests, idToVersionId, tenantId);
 
         // Order that Bundle specifies
         // https://www.hl7.org/fhir/http.html#trules

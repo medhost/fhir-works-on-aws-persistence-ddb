@@ -177,7 +177,7 @@ export class S3DataService implements Persistence {
             id,
             dbResponse.resource.meta.versionId,
             dbResponse.resource.contentType,
-            tenantId
+            tenantId,
         );
         let presignedGetUrlResponse;
         try {
