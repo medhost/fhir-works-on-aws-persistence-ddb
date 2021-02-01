@@ -38,6 +38,7 @@ describe('atomicallyReadWriteResources', () => {
             const actualResponse = await bundleService.transaction({
                 requests: [deleteRequest],
                 startTime: new Date(),
+                tenantId: '',
             });
 
             expect(actualResponse).toStrictEqual(expectedResponse);
@@ -165,6 +166,7 @@ describe('atomicallyReadWriteResources', () => {
             const actualResponse = await transactionService.transaction({
                 requests: [createRequest],
                 startTime: new Date(),
+                tenantId: '',
             });
 
             // CHECK
@@ -174,6 +176,7 @@ describe('atomicallyReadWriteResources', () => {
             const insertedResource = DynamoDBConverter.marshall({
                 ...resource,
                 documentStatus: 'PENDING',
+                externalId: id,
                 vid: 1,
                 id: 'holder',
                 lockEndTs: 5, // test number
@@ -277,6 +280,7 @@ describe('atomicallyReadWriteResources', () => {
             const actualResponse = await transactionService.transaction({
                 requests: [updateRequest],
                 startTime: new Date(),
+                tenantId: '',
             });
 
             // CHECK
@@ -313,6 +317,7 @@ describe('atomicallyReadWriteResources', () => {
             const insertedResource = DynamoDBConverter.marshall({
                 ...newResource,
                 documentStatus: 'PENDING',
+                externalId: id,
                 vid: newVid,
                 lockEndTs: 5, // test number
             });

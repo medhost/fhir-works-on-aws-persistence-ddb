@@ -16,7 +16,11 @@ import { DynamoDBConverter, RESOURCE_TABLE } from './dynamoDb';
 import DynamoDbParamBuilder from './dynamoDbParamBuilder';
 
 export default class DynamoDbBundleServiceHelper {
-    static generateStagingRequests(requests: BatchReadWriteRequest[], idToVersionId: Record<string, number>) {
+    static generateStagingRequests(
+        requests: BatchReadWriteRequest[],
+        idToVersionId: Record<string, number>,
+        tenantId: string,
+    ) {
         const deleteRequests: any = [];
         const createRequests: any = [];
         const updateRequests: any = [];
@@ -88,6 +92,7 @@ export default class DynamoDbBundleServiceHelper {
                             DOCUMENT_STATUS.PENDING_DELETE,
                             id,
                             vid,
+                            tenantId,
                         ),
                     );
                     newBundleEntryResponses.push({

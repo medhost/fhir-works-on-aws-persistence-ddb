@@ -193,6 +193,7 @@ export default class GenerateStagingRequestsFactory {
             DOCUMENT_STATUS.PENDING_DELETE,
             id,
             vid,
+            '',
         );
 
         expectedRequest.Update.ExpressionAttributeValues[':currentTs'].N = expect.stringMatching(

@@ -14,6 +14,7 @@ describe('generateStagingRequests', () => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getCreate().request],
             GenerateStagingRequestsFactory.getCreate().idToVersionId,
+            '',
         );
         const expectedResult: any = {
             deleteRequests: [],
@@ -31,6 +32,7 @@ describe('generateStagingRequests', () => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getRead().request],
             GenerateStagingRequestsFactory.getRead().idToVersionId,
+            '',
         );
         const expectedResult: any = {
             deleteRequests: [],
@@ -48,6 +50,7 @@ describe('generateStagingRequests', () => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getUpdate().request],
             GenerateStagingRequestsFactory.getUpdate().idToVersionId,
+            '',
         );
 
         const expectedResult: any = {
@@ -66,6 +69,7 @@ describe('generateStagingRequests', () => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
             [GenerateStagingRequestsFactory.getDelete().request],
             GenerateStagingRequestsFactory.getDelete().idToVersionId,
+            '',
         );
         const expectedResult: any = {
             deleteRequests: [GenerateStagingRequestsFactory.getDelete().expectedRequest],
@@ -93,7 +97,7 @@ describe('generateStagingRequests', () => {
             GenerateStagingRequestsFactory.getUpdate().request,
             GenerateStagingRequestsFactory.getDelete().request,
         ];
-        const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(requests, idToVersionId);
+        const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(requests, idToVersionId, '');
 
         const expectedResult = {
             createRequests: [GenerateStagingRequestsFactory.getCreate().expectedRequest],

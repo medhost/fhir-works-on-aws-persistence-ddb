@@ -22,6 +22,7 @@ export default class DynamoDbParamBuilder {
         newStatus: DOCUMENT_STATUS,
         id: string,
         vid: number,
+        tenantId: string,
     ) {
         const currentTs = Date.now();
         let futureEndTs = currentTs;
@@ -31,7 +32,7 @@ export default class DynamoDbParamBuilder {
 
         const params: any = {
             Update: {
-                TableName: RESOURCE_TABLE,
+                TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
                 Key: DynamoDBConverter.marshall({
                     id,
                     vid,
