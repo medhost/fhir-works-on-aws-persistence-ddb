@@ -273,6 +273,9 @@ describe('buildPutAvailableItemParam', () => {
         const expectedParams = {
             TableName: '-123',
             Item: {
+                _references: {
+                    L: [],
+                },
                 resourceType: {
                     S: 'Patient',
                 },

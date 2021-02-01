@@ -13,7 +13,13 @@ import { DynamoDbBundleService } from './dynamoDbBundleService';
 import { DynamoDBConverter } from './dynamoDb';
 import { timeFromEpochInMsRegExp, utcTimeRegExp, uuidRegExp } from '../../testUtilities/regExpressions';
 import DynamoDbHelper from './dynamoDbHelper';
-import { DOCUMENT_STATUS_FIELD, LOCK_END_TS_FIELD, REFERENCES_FIELD, VID_FIELD } from './dynamoDbUtil';
+import {
+    DOCUMENT_STATUS_FIELD,
+    EXTERNAL_ID_FIELD,
+    LOCK_END_TS_FIELD,
+    REFERENCES_FIELD,
+    VID_FIELD,
+} from './dynamoDbUtil';
 // eslint-disable-next-line import/order
 import sinon = require('sinon');
 
@@ -347,6 +353,7 @@ describe('atomicallyReadWriteResources', () => {
             };
             insertedResourceJson[DOCUMENT_STATUS_FIELD] = 'PENDING';
             insertedResourceJson[VID_FIELD] = newVid;
+            insertedResourceJson[EXTERNAL_ID_FIELD] = id;
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
 
