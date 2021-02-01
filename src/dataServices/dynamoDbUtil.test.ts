@@ -4,7 +4,14 @@
  */
 
 import { clone } from 'fhir-works-on-aws-interface';
-import { DOCUMENT_STATUS_FIELD, DynamoDbUtil, LOCK_END_TS_FIELD, REFERENCES_FIELD, VID_FIELD } from './dynamoDbUtil';
+import {
+    DOCUMENT_STATUS_FIELD,
+    DynamoDbUtil,
+    EXTERNAL_ID_FIELD,
+    LOCK_END_TS_FIELD,
+    REFERENCES_FIELD,
+    VID_FIELD,
+} from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
 import { utcTimeRegExp } from '../../testUtilities/regExpressions';
 
@@ -70,6 +77,7 @@ describe('prepItemForDdbInsert', () => {
     const checkExpectedItemMatchActualItem = (actualItem: any, expectedResource: any) => {
         const expectedItem = clone(expectedResource);
         expectedItem[DOCUMENT_STATUS_FIELD] = DOCUMENT_STATUS.PENDING;
+        expectedItem[EXTERNAL_ID_FIELD] = id;
         expectedItem.id = id;
         expectedItem.vid = vid;
         expectedItem.meta = {
