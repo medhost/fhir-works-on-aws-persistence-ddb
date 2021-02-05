@@ -126,21 +126,6 @@ export default class DdbToEsHelper {
     }
 
     // eslint-disable-next-line class-methods-use-this
-    parseTenantIdFromArn(sourceARN: string): string {
-        if (sourceARN) {
-            const initialParseForTable = sourceARN.split('table/').pop();
-            if (initialParseForTable) {
-                const eventSourceTable = initialParseForTable.split('/')[0];
-                const tenantId = eventSourceTable.split('-').pop();
-                if (tenantId) {
-                    return tenantId;
-                }
-            }
-        }
-        return '';
-    }
-
-    // eslint-disable-next-line class-methods-use-this
     async logAndExecutePromises(promiseParamAndIds: PromiseParamAndId[]) {
         const upsertAvailablePromiseParamAndIds = promiseParamAndIds.filter(paramAndId => {
             return paramAndId.type === 'upsert-AVAILABLE';
