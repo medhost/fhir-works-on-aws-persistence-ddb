@@ -15,16 +15,32 @@ const REMOVE = 'REMOVE';
 
 export async function handleDdbToEsEvent(event: any) {
     const ddbToEsHelper = new DdbToEsHelper();
-    const { MULTI_TENANT } = process.env;
+    const ssm = new AWS.SSM();
+    const { TENANT_PARAMETER_STORE } = process.env;
     try {
         const promiseParamAndIds: PromiseParamAndId[] = [];
         for (let i = 0; i < event.Records.length; i += 1) {
             const record = event.Records[i];
-            console.log('EventName: ', record.eventName);
             let tenantId = '';
-            if (MULTI_TENANT && MULTI_TENANT.toLowerCase() === 'true') {
-                tenantId = ddbToEsHelper.parseTenantIdFromArn(record.eventSourceARN);
-                console.log('Tenant Id: ', tenantId);
+            if (TENANT_PARAMETER_STORE) {
+                console.log('Tenant Parameter Store: ', TENANT_PARAMETER_STORE);
+                // eslint-disable-next-line no-await-in-loop
+                const returnValue = await ssm
+                    .getParameter({
+                        Name: TENANT_PARAMETER_STORE,
+                        WithDecryption: true,
+                    })
+                    .promise();
+
+                if (returnValue && returnValue.Parameter && returnValue.Parameter.Value) {
+                    console.log('Source ARN: ', record.eventSourceARN);
+                    const tenants = JSON.parse(returnValue.Parameter.Value);
+                    // eslint-disable-next-line no-prototype-builtins
+                    if (tenants && tenants.hasOwnProperty(record.eventSourceARN)) {
+                        tenantId = tenants[record.eventSourceARN].trim();
+                        console.log('Tenant Id: ', tenantId);
+                    }
+                }
             }
             const ddbJsonImage = record.eventName === REMOVE ? record.dynamodb.OldImage : record.dynamodb.NewImage;
             const image = AWS.DynamoDB.Converter.unmarshall(ddbJsonImage);
