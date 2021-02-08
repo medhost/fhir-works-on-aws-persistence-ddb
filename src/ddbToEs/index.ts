@@ -33,6 +33,7 @@ export async function handleDdbToEsEvent(event: any) {
                     .promise();
 
                 if (returnValue && returnValue.Parameter && returnValue.Parameter.Value) {
+                    console.log('Source ARN: ', record.eventSourceARN);
                     const tenants = JSON.parse(returnValue.Parameter.Value);
                     // eslint-disable-next-line no-prototype-builtins
                     if (tenants && tenants.hasOwnProperty(record.eventSourceARN)) {
