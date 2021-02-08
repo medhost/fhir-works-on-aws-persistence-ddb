@@ -35,9 +35,13 @@ export async function handleDdbToEsEvent(event: any) {
                 if (returnValue && returnValue.Parameter && returnValue.Parameter.Value) {
                     console.log('Source ARN: ', record.eventSourceARN);
                     const tenants = JSON.parse(returnValue.Parameter.Value);
+                    const arnSplit = record.eventSourceARN.split('/');
+                    const arnValue = arnSplit[0].concat('/').concat(arnSplit[1]);
+                    console.log('ARN: ', arnValue);
+
                     // eslint-disable-next-line no-prototype-builtins
-                    if (tenants && tenants.hasOwnProperty(record.eventSourceARN)) {
-                        tenantId = tenants[record.eventSourceARN].trim();
+                    if (tenants && tenants.hasOwnProperty(arnValue)) {
+                        tenantId = tenants[arnValue].trim();
                         console.log('Tenant Id: ', tenantId);
                     }
                 }
