@@ -225,9 +225,13 @@ describe('atomicallyReadWriteResources', () => {
                                 vid: { N: '1' },
                             },
                             UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
+                            ConditionExpression: 'resourceType = :resourceType',
                             ExpressionAttributeValues: {
                                 ':newStatus': { S: 'AVAILABLE' },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
@@ -322,7 +326,7 @@ describe('atomicallyReadWriteResources', () => {
                                 vid: { N: oldVid.toString() },
                             },
                             ConditionExpression:
-                                'documentStatus = :oldStatus OR (lockEndTs < :currentTs AND (documentStatus = :lockStatus OR documentStatus = :pendingStatus OR documentStatus = :pendingDeleteStatus))',
+                                'resourceType = :resourceType AND (documentStatus = :oldStatus OR (lockEndTs < :currentTs AND (documentStatus = :lockStatus OR documentStatus = :pendingStatus OR documentStatus = :pendingDeleteStatus)))',
                             UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
                             ExpressionAttributeValues: {
                                 ':newStatus': { S: 'LOCKED' },
@@ -332,6 +336,9 @@ describe('atomicallyReadWriteResources', () => {
                                 ':pendingStatus': { S: 'PENDING' },
                                 ':currentTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
@@ -348,6 +355,8 @@ describe('atomicallyReadWriteResources', () => {
 
             const insertedResource = DynamoDBConverter.marshall(insertedResourceJson);
             insertedResource.lockEndTs.N = expect.stringMatching(timeFromEpochInMsRegExp);
+            insertedResource.meta!.M!.lastUpdated.S = expect.stringMatching(utcTimeRegExp);
+            insertedResource.meta!.M!.versionId.S = newVid.toString();
 
             // 1. create new Patient record with documentStatus of 'PENDING'
             expect(transactWriteItemSpy.getCall(1).args[0]).toStrictEqual({
@@ -371,10 +380,14 @@ describe('atomicallyReadWriteResources', () => {
                                 id: { S: id },
                                 vid: { N: oldVid.toString() },
                             },
+                            ConditionExpression: 'resourceType = :resourceType',
                             UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
                             ExpressionAttributeValues: {
                                 ':newStatus': { S: 'DELETED' },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
@@ -385,10 +398,14 @@ describe('atomicallyReadWriteResources', () => {
                                 id: { S: id },
                                 vid: { N: newVid.toString() },
                             },
+                            ConditionExpression: 'resourceType = :resourceType',
                             UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
                             ExpressionAttributeValues: {
                                 ':newStatus': { S: 'AVAILABLE' },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },

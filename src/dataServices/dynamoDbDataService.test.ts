@@ -12,20 +12,21 @@ import isEqual from 'lodash/isEqual';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import {
     BundleResponse,
-    BatchReadWriteResponse,
     InitiateExportRequest,
     ResourceNotFoundError,
     ExportJobStatus,
     ResourceVersionNotFoundError,
+    InvalidResourceError,
 } from 'fhir-works-on-aws-interface';
 import { TooManyConcurrentExportRequestsError } from 'fhir-works-on-aws-interface/lib/errors/TooManyConcurrentExportRequestsError';
 import each from 'jest-each';
-import { utcTimeRegExp } from '../../testUtilities/regExpressions';
+import { utcTimeRegExp, uuidRegExp } from '../../testUtilities/regExpressions';
 import { DynamoDbBundleService } from './dynamoDbBundleService';
 import { DynamoDbDataService } from './dynamoDbDataService';
 import { DynamoDBConverter } from './dynamoDb';
 import DynamoDbHelper from './dynamoDbHelper';
 import DynamoDbParamBuilder from './dynamoDbParamBuilder';
+import { ConditionalCheckFailedExceptionMock } from '../../testUtilities/ConditionalCheckFailedException';
 
 jest.mock('../bulkExport/bulkExport');
 AWSMock.setSDKInstance(AWS);
@@ -44,21 +45,20 @@ describe('CREATE', () => {
     afterEach(() => {
         AWSMock.restore();
     });
+    // BUILD
+    const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+    const resourceType = 'Patient';
+    const resource = {
+        id,
+        resourceType,
+        name: [
+            {
+                family: 'Jameson',
+                given: ['Matt'],
+            },
+        ],
+    };
     test('SUCCESS: Create Resource', async () => {
-        // BUILD
-        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-        const resourceType = 'Patient';
-        const resource = {
-            id,
-            resourceType,
-            name: [
-                {
-                    family: 'Jameson',
-                    given: ['Matt'],
-                },
-            ],
-        };
-
         // READ items (Success)
         AWSMock.mock('DynamoDB', 'putItem', (params: PutItemInput, callback: Function) => {
             callback(null, 'success');
@@ -67,7 +67,7 @@ describe('CREATE', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.createResource({ resource, resourceType, id });
+        const serviceResponse = await dynamoDbDataService.createResource({ resource, resourceType });
 
         // CHECK
         const expectedResource: any = { ...resource };
@@ -75,10 +75,24 @@ describe('CREATE', () => {
             versionId: '1',
             lastUpdated: expect.stringMatching(utcTimeRegExp),
         };
+        expectedResource.id = expect.stringMatching(uuidRegExp);
 
         expect(serviceResponse.success).toEqual(true);
         expect(serviceResponse.message).toEqual('Resource created');
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
+    });
+    test('FAILED: Resource with Id already exists', async () => {
+        // READ items (Success)
+        AWSMock.mock('DynamoDB', 'putItem', (params: PutItemInput, callback: Function) => {
+            callback(new ConditionalCheckFailedExceptionMock(), {});
+        });
+
+        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+
+        // OPERATE, CHECK
+        await expect(dynamoDbDataService.createResource({ resource, resourceType, id })).rejects.toThrowError(
+            new InvalidResourceError('Auto generated id matched an existing id'),
+        );
     });
 });
 
@@ -89,6 +103,7 @@ describe('READ', () => {
     // });
     afterEach(() => {
         AWSMock.restore();
+        sinon.restore();
     });
     test('SUCCESS: Get Resource', async () => {
         // BUILD
@@ -107,7 +122,7 @@ describe('READ', () => {
         };
 
         sinon
-            .stub(DynamoDbHelper.prototype, 'getMostRecentValidResource')
+            .stub(DynamoDbHelper.prototype, 'getMostRecentUserReadableResource')
             .returns(Promise.resolve({ message: 'Resource found', resource }));
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
@@ -158,7 +173,7 @@ describe('READ', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('ERROR: Get Versioned Resource', async () => {
+    test('ERROR: Get Versioned Resource: Unable to find resource', async () => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = '5';
@@ -170,19 +185,35 @@ describe('READ', () => {
         });
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
-        try {
-            // OPERATE
-            await dynamoDbDataService.vReadResource({ resourceType, id, vid });
-        } catch (e) {
-            // CHECK
-            expect(e).toMatchObject(new ResourceVersionNotFoundError(resourceType, id, vid));
-        }
+
+        // OPERATE, CHECK
+        await expect(dynamoDbDataService.vReadResource({ resourceType, id, vid })).rejects.toThrowError(
+            new ResourceVersionNotFoundError(resourceType, id, vid),
+        );
+    });
+
+    test('ERROR: Get Versioned Resource: resourceType of request does not match resourceType retrieved', async () => {
+        // BUILD
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const vid = '5';
+        const resourceType = 'Patient';
+
+        // READ items (Success)
+        AWSMock.mock('DynamoDB', 'getItem', (params: GetItemInput, callback: Function) => {
+            callback(null, { Item: DynamoDBConverter.marshall({ id, vid, resourceType: 'Observation' }) });
+        });
+
+        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+        await expect(dynamoDbDataService.vReadResource({ resourceType, id, vid })).rejects.toThrowError(
+            new ResourceVersionNotFoundError(resourceType, id, vid),
+        );
     });
 });
 
 describe('UPDATE', () => {
     afterEach(() => {
         AWSMock.restore();
+        sinon.restore();
     });
 
     test('Successfully update resource', async () => {
@@ -198,33 +229,28 @@ describe('UPDATE', () => {
                     given: ['Matt'],
                 },
             ],
-            meta: { versionId: '1', lastUpdated: new Date().toISOString() },
         };
 
-        // READ items (Success)
-        AWSMock.mock('DynamoDB', 'query', (params: QueryInput, callback: Function) => {
-            callback(null, {
-                Items: [DynamoDBConverter.marshall(resource)],
-            });
-        });
+        sinon
+            .stub(DynamoDbHelper.prototype, 'getMostRecentUserReadableResource')
+            .returns(Promise.resolve({ message: 'Resource found', resource }));
 
         const vid = 2;
-        const batchReadWriteResponse: BatchReadWriteResponse = {
-            id,
-            vid: vid.toString(),
-            resourceType: 'Patient',
-            operation: 'update',
-            resource: {},
-            lastModified: '2020-06-18T20:20:12.763Z',
-        };
-
         const batchReadWriteServiceResponse: BundleResponse = {
             success: true,
             message: '',
-            batchReadWriteResponses: [batchReadWriteResponse],
+            batchReadWriteResponses: [
+                {
+                    id,
+                    vid: vid.toString(),
+                    resourceType: 'Patient',
+                    operation: 'update',
+                    resource: {},
+                    lastModified: '2020-06-18T20:20:12.763Z',
+                },
+            ],
         };
 
-        sinon.stub(DynamoDbBundleService.prototype, 'batch').returns(Promise.resolve(batchReadWriteServiceResponse));
         sinon
             .stub(DynamoDbBundleService.prototype, 'transaction')
             .returns(Promise.resolve(batchReadWriteServiceResponse));
@@ -250,6 +276,7 @@ describe('UPDATE', () => {
 describe('DELETE', () => {
     afterEach(() => {
         AWSMock.restore();
+        sinon.restore();
     });
 
     test('Successfully delete resource', async () => {
@@ -283,6 +310,10 @@ describe('DELETE', () => {
                 Items: [DynamoDBConverter.marshall(resource)],
             });
         });
+
+        sinon
+            .stub(DynamoDbHelper.prototype, 'getMostRecentUserReadableResource')
+            .returns(Promise.resolve({ message: 'Resource found', resource }));
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
