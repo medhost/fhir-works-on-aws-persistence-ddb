@@ -11,77 +11,75 @@ import { timeFromEpochInMsRegExp, utcTimeRegExp } from '../../testUtilities/regE
 
 describe('buildUpdateDocumentStatusParam', () => {
     const resourceType = 'Patient';
-    test('Update status correctly when there is a requirement for what the old status needs to be', () => {
-        each([
-            ['', ''],
-            ['custom-tenant', '-custom-tenant'],
-        ]).it(
-            'Update status correctly when there is a requirement for what the old status needs to be. Tenant is "%s"',
-            (tenantId: string, tableName: string) => {
-                const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-                const vid = 1;
+    each([
+        ['', ''],
+        ['custom-tenant', '-custom-tenant'],
+    ]).it(
+        'Update status correctly when there is a requirement for what the old status needs to be. Tenant is "%s"',
+        (tenantId: string, tableName: string) => {
+            const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+            const vid = 1;
 
-                // Check that the old status is AVAILABLE before changing it to LOCK
-                const actualParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
-                    DOCUMENT_STATUS.AVAILABLE,
-                    DOCUMENT_STATUS.LOCKED,
-                    id,
-                    vid,
-                    resourceType,
-                    tenantId,
-                );
+            // Check that the old status is AVAILABLE before changing it to LOCK
+            const actualParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
+                DOCUMENT_STATUS.AVAILABLE,
+                DOCUMENT_STATUS.LOCKED,
+                id,
+                vid,
+                resourceType,
+                tenantId,
+            );
 
-                const expectedParam = {
-                    Update: {
-                        TableName: tableName,
-                        Key: {
-                            id: {
-                                S: id,
-                            },
-                            vid: {
-                                N: vid.toString(),
-                            },
+            const expectedParam = {
+                Update: {
+                    TableName: tableName,
+                    Key: {
+                        id: {
+                            S: id,
                         },
-                        UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
-                        ExpressionAttributeValues: {
-                            ':newStatus': {
-                                S: 'LOCKED',
-                            },
-                            ':oldStatus': {
-                                S: 'AVAILABLE',
-                            },
-                            ':pendingDeleteStatus': {
-                                S: 'PENDING_DELETE',
-                            },
-                            ':pendingStatus': {
-                                S: 'PENDING',
-                            },
-                            ':resourceType': {
-                                S: 'Patient',
-                            },
-                            ':lockStatus': {
-                                S: 'LOCKED',
-                            },
-                            ':currentTs': {
-                                N: expect.stringMatching(timeFromEpochInMsRegExp),
-                            },
-                            ':futureEndTs': {
-                                N: expect.stringMatching(timeFromEpochInMsRegExp),
-                            },
+                        vid: {
+                            N: vid.toString(),
                         },
-                        ConditionExpression:
-                            'resourceType = :resourceType AND (documentStatus = :oldStatus OR (lockEndTs < :currentTs AND (documentStatus = :lockStatus OR documentStatus = :pendingStatus OR documentStatus = :pendingDeleteStatus)))',
                     },
-                };
+                    UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
+                    ExpressionAttributeValues: {
+                        ':newStatus': {
+                            S: 'LOCKED',
+                        },
+                        ':oldStatus': {
+                            S: 'AVAILABLE',
+                        },
+                        ':pendingDeleteStatus': {
+                            S: 'PENDING_DELETE',
+                        },
+                        ':pendingStatus': {
+                            S: 'PENDING',
+                        },
+                        ':resourceType': {
+                            S: 'Patient',
+                        },
+                        ':lockStatus': {
+                            S: 'LOCKED',
+                        },
+                        ':currentTs': {
+                            N: expect.stringMatching(timeFromEpochInMsRegExp),
+                        },
+                        ':futureEndTs': {
+                            N: expect.stringMatching(timeFromEpochInMsRegExp),
+                        },
+                    },
+                    ConditionExpression:
+                        'resourceType = :resourceType AND (documentStatus = :oldStatus OR (lockEndTs < :currentTs AND (documentStatus = :lockStatus OR documentStatus = :pendingStatus OR documentStatus = :pendingDeleteStatus)))',
+                },
+            };
 
-                const futureTs = Number(actualParam.Update.ExpressionAttributeValues[':futureEndTs'].N);
-                const currentTs = Number(actualParam.Update.ExpressionAttributeValues[':currentTs'].N);
+            const futureTs = Number(actualParam.Update.ExpressionAttributeValues[':futureEndTs'].N);
+            const currentTs = Number(actualParam.Update.ExpressionAttributeValues[':currentTs'].N);
 
-                expect(futureTs).toEqual(currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS);
-                expect(actualParam).toEqual(expectedParam);
-            },
-        );
-    });
+            expect(futureTs).toEqual(currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS);
+            expect(actualParam).toEqual(expectedParam);
+        },
+    );
 
     const getExpectedParamForUpdateWithoutOldStatus = (
         documentStatus: DOCUMENT_STATUS,
@@ -118,74 +116,72 @@ describe('buildUpdateDocumentStatusParam', () => {
     };
     const wiggleRoomInMs = 1 * 300;
 
-    test('When a document is being locked, lockEndTs should have a timestamp that expires in the future', () => {
-        each([
-            ['', ''],
-            ['custom-tenant', '-custom-tenant'],
-        ]).it(
-            'When a document is being locked, lockEndTs should have a timestamp that expires in the future. Tenant is "%s"',
-            (tenantId: string, tableName: string) => {
-                const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-                const vid = 1;
-                const actualParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
-                    null,
-                    DOCUMENT_STATUS.LOCKED,
-                    id,
-                    vid,
-                    resourceType,
-                    tenantId,
-                );
+    each([
+        ['', ''],
+        ['custom-tenant', '-custom-tenant'],
+    ]).it(
+        'When a document is being locked, lockEndTs should have a timestamp that expires in the future. Tenant is "%s"',
+        (tenantId: string, tableName: string) => {
+            const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+            const vid = 1;
+            const actualParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
+                null,
+                DOCUMENT_STATUS.LOCKED,
+                id,
+                vid,
+                resourceType,
+                tenantId,
+            );
 
-                const futureTs = Number(actualParam.Update.ExpressionAttributeValues[':futureEndTs'].N);
-                // We have to generate the current time, because when there is no requirement for an oldStatus, the expected param doesn't
-                // have a currentTs value as part of the query
-                const currentTs = Date.now();
+            const futureTs = Number(actualParam.Update.ExpressionAttributeValues[':futureEndTs'].N);
+            // We have to generate the current time, because when there is no requirement for an oldStatus, the expected param doesn't
+            // have a currentTs value as part of the query
+            const currentTs = Date.now();
 
-                // Future timeStamp should be approximately DynamoDbParamBuilder.LOCK_DURATION_IN_MS time from now
-                expect(futureTs).toBeLessThanOrEqual(currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS + wiggleRoomInMs);
-                expect(futureTs).toBeGreaterThanOrEqual(
-                    currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS - wiggleRoomInMs,
-                );
+            // Future timeStamp should be approximately DynamoDbParamBuilder.LOCK_DURATION_IN_MS time from now
+            expect(futureTs).toBeLessThanOrEqual(
+                currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS + wiggleRoomInMs,
+            );
+            expect(futureTs).toBeGreaterThanOrEqual(
+                currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS - wiggleRoomInMs,
+            );
 
-                expect(actualParam).toEqual(
-                    getExpectedParamForUpdateWithoutOldStatus(DOCUMENT_STATUS.LOCKED, id, vid, tableName),
-                );
-            },
-        );
-    });
+            expect(actualParam).toEqual(
+                getExpectedParamForUpdateWithoutOldStatus(DOCUMENT_STATUS.LOCKED, id, vid, tableName),
+            );
+        },
+    );
 
-    test('Update status correctly when there is NO requirement for what the old status needs to be', () => {
-        each([
-            ['', ''],
-            ['custom-tenant', '-custom-tenant'],
-        ]).it(
-            'Update status correctly when there is NO requirement for what the old status needs to be. Tenant is "%s"',
-            (tenantId: string, tableName: string) => {
-                const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-                const vid = 1;
-                // Check the status to be AVAILABLE no matter what the previous status was
-                const actualParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
-                    null,
-                    DOCUMENT_STATUS.AVAILABLE,
-                    id,
-                    vid,
-                    resourceType,
-                    tenantId,
-                );
+    each([
+        ['', ''],
+        ['custom-tenant', '-custom-tenant'],
+    ]).it(
+        'Update status correctly when there is NO requirement for what the old status needs to be. Tenant is "%s"',
+        (tenantId: string, tableName: string) => {
+            const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+            const vid = 1;
+            // Check the status to be AVAILABLE no matter what the previous status was
+            const actualParam = DynamoDbParamBuilder.buildUpdateDocumentStatusParam(
+                null,
+                DOCUMENT_STATUS.AVAILABLE,
+                id,
+                vid,
+                resourceType,
+                tenantId,
+            );
 
-                const futureTs = Number(actualParam.Update.ExpressionAttributeValues[':futureEndTs'].N);
-                // We have to generate the current time, because when there is no requirement for an oldStatus, the expected param doesn't
-                // have a currentTs value as part of the query
-                const currentTs = Date.now();
-                // FutureTs should be approximately now
-                expect(futureTs).toBeLessThanOrEqual(currentTs + wiggleRoomInMs);
-                expect(futureTs).toBeGreaterThanOrEqual(currentTs - wiggleRoomInMs);
-                expect(actualParam).toEqual(
-                    getExpectedParamForUpdateWithoutOldStatus(DOCUMENT_STATUS.AVAILABLE, id, vid, tableName),
-                );
-            },
-        );
-    });
+            const futureTs = Number(actualParam.Update.ExpressionAttributeValues[':futureEndTs'].N);
+            // We have to generate the current time, because when there is no requirement for an oldStatus, the expected param doesn't
+            // have a currentTs value as part of the query
+            const currentTs = Date.now();
+            // FutureTs should be approximately now
+            expect(futureTs).toBeLessThanOrEqual(currentTs + wiggleRoomInMs);
+            expect(futureTs).toBeGreaterThanOrEqual(currentTs - wiggleRoomInMs);
+            expect(actualParam).toEqual(
+                getExpectedParamForUpdateWithoutOldStatus(DOCUMENT_STATUS.AVAILABLE, id, vid, tableName),
+            );
+        },
+    );
 });
 
 describe('buildPutAvailableItemParam', () => {
@@ -203,7 +199,9 @@ describe('buildPutAvailableItemParam', () => {
             ],
             gender: 'male',
             meta: {
-                lastUpdated: '2020-03-26T15:46:55.848Z',
+                lastUpdated: {
+                    S: expect.stringMatching(utcTimeRegExp),
+                },
                 versionId: vid.toString(),
             },
         };
@@ -284,7 +282,9 @@ describe('buildPutAvailableItemParam', () => {
             ],
             gender: 'male',
             meta: {
-                lastUpdated: '2020-03-26T15:46:55.848Z',
+                lastUpdated: {
+                    S: expect.stringMatching(utcTimeRegExp),
+                },
                 versionId: vid.toString(),
             },
         };
@@ -292,6 +292,7 @@ describe('buildPutAvailableItemParam', () => {
         const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
         const expectedParams = {
             TableName: '-123',
+            ConditionExpression: 'attribute_not_exists(id)',
             Item: {
                 _references: {
                     L: [],
@@ -332,7 +333,7 @@ describe('buildPutAvailableItemParam', () => {
                 meta: {
                     M: {
                         lastUpdated: {
-                            S: '2020-03-26T15:46:55.848Z',
+                            S: expect.stringMatching(utcTimeRegExp),
                         },
                         versionId: {
                             S: '1',
@@ -401,7 +402,7 @@ describe('Multi-tenancy in DynamoDB', () => {
         const vid = 1;
         const tenantId = '123';
         const tableName = '-123';
-        const result = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, vid, tenantId);
+        const result = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', vid, tenantId);
         expect(result.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
     });
 });
@@ -409,7 +410,7 @@ describe('Multi-tenancy in DynamoDB', () => {
 describe('buildGetResourcesQueryParam', () => {
     const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
     const expectedParam = {
-        TableName: '',
+        TableName: '-123',
         ScanIndexForward: false,
         Limit: 2,
         FilterExpression: '#r = :resourceType',
@@ -421,13 +422,15 @@ describe('buildGetResourcesQueryParam', () => {
         },
     };
     test('Param without projection expression', () => {
-        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', 2);
+        const tenantId = '123';
+        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', 2, tenantId);
         expect(actualParam).toEqual(expectedParam);
     });
 
     test('Param with projection expression', () => {
+        const tenantId = '123';
         const projectionExpression = 'id, resourceType, name';
-        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', 2, projectionExpression);
+        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', 2, tenantId,  projectionExpression);
 
         const clonedExpectedParam: any = cloneDeep(expectedParam);
         clonedExpectedParam.ProjectionExpression = projectionExpression;

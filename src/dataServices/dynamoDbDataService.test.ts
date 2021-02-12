@@ -89,10 +89,10 @@ describe('CREATE with default tenant', () => {
             callback(new ConditionalCheckFailedExceptionMock(), {});
         });
 
+        const tenantId = '';
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
-
         // OPERATE, CHECK
-        await expect(dynamoDbDataService.createResource({ resource, resourceType, id })).rejects.toThrowError(
+        await expect(dynamoDbDataService.createResource({ resource, resourceType, id, tenantId })).rejects.toThrowError(
             new InvalidResourceError('Auto generated id matched an existing id'),
         );
     });
@@ -209,8 +209,9 @@ describe('READ with default tenant', () => {
             callback(null, { Item: DynamoDBConverter.marshall({ id, vid, resourceType: 'Observation' }) });
         });
 
+        const tenantId = '';
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
-        await expect(dynamoDbDataService.vReadResource({ resourceType, id, vid })).rejects.toThrowError(
+        await expect(dynamoDbDataService.vReadResource({ id, vid, resourceType, tenantId })).rejects.toThrowError(
             new ResourceVersionNotFoundError(resourceType, id, vid),
         );
     });

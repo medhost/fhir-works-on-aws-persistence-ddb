@@ -122,7 +122,13 @@ export default class DynamoDbParamBuilder {
      * @param allowOverwriteId - Allow overwriting a resource with the same id
      * @return DDB params for PUT operation
      */
-    static buildPutAvailableItemParam(item: any, id: string, vid: number, tenantId: string, allowOverwriteId: boolean = false) {
+    static buildPutAvailableItemParam(
+        item: any,
+        id: string,
+        vid: number,
+        tenantId: string,
+        allowOverwriteId: boolean = false,
+    ) {
         const newItem = DynamoDbUtil.prepItemForDdbInsert(item, id, vid, DOCUMENT_STATUS.AVAILABLE);
         const param: any = {
             TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
