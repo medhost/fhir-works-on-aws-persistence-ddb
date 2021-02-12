@@ -202,8 +202,8 @@ export default class GenerateStagingRequestsFactory {
             DOCUMENT_STATUS.PENDING_DELETE,
             id,
             vid,
-            tenantId,
             resourceType,
+            tenantId,
         );
 
         expectedRequest.Update.ExpressionAttributeValues[':currentTs'].N = expect.stringMatching(
