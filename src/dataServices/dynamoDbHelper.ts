@@ -68,7 +68,11 @@ export default class DynamoDbHelper {
     /**
      * @return The most recent resource that has not been deleted and has been committed to the database (i.e. The resource is not in a transitional state)
      */
-    async getMostRecentUserReadableResource(resourceType: string, id: string, tenantId: string): Promise<GenericResponse> {
+    async getMostRecentUserReadableResource(
+        resourceType: string,
+        id: string,
+        tenantId: string,
+    ): Promise<GenericResponse> {
         const items = await this.getMostRecentResources(resourceType, id, 2, tenantId);
         const latestItemDocStatus: DOCUMENT_STATUS = <DOCUMENT_STATUS>items[0][DOCUMENT_STATUS_FIELD];
         if (latestItemDocStatus === DOCUMENT_STATUS.DELETED) {

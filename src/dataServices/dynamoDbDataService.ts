@@ -74,7 +74,11 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
     }
 
     async readResource(request: ReadResourceRequest): Promise<GenericResponse> {
-        return this.dynamoDbHelper.getMostRecentUserReadableResource(request.resourceType, request.id, request.tenantId);
+        return this.dynamoDbHelper.getMostRecentUserReadableResource(
+            request.resourceType,
+            request.id,
+            request.tenantId,
+        );
     }
 
     async vReadResource(request: vReadResourceRequest): Promise<GenericResponse> {
@@ -139,7 +143,7 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
             vid,
             resourceType,
             tenantId,
-            ).Update;
+        ).Update;
         await this.dynamoDb.updateItem(updateStatusToDeletedParam).promise();
         return {
             success: true,
