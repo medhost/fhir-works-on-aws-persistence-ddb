@@ -74,14 +74,14 @@ describe('prepItemForDdbInsert', () => {
         },
     };
 
-    const checkExpectedItemMatchActualItem = (actualItem: any, expectedResource: any) => {
+    const checkExpectedItemMatchActualItem = (actualItem: any, expectedResource: any, newVid: number) => {
         const expectedItem = clone(expectedResource);
         expectedItem[DOCUMENT_STATUS_FIELD] = DOCUMENT_STATUS.PENDING;
         expectedItem[EXTERNAL_ID_FIELD] = id;
         expectedItem.id = id;
-        expectedItem.vid = vid;
+        expectedItem.vid = newVid;
         expectedItem.meta = {
-            versionId: vid.toString(),
+            versionId: newVid.toString(),
             lastUpdated: expect.stringMatching(utcTimeRegExp),
         };
         expectedItem.lockEndTs = expect.any(Number);
@@ -110,7 +110,7 @@ describe('prepItemForDdbInsert', () => {
         // CHECK
         updatedResource.meta.versionId = vid.toString();
         updatedResource[REFERENCES_FIELD] = [organization, otherPatient];
-        checkExpectedItemMatchActualItem(actualItem, updatedResource);
+        checkExpectedItemMatchActualItem(actualItem, updatedResource, vid);
     });
 
     test('Return item correctly when resource has "referenceSeq" as a field. Only resource fields named "reference" should be added to `_references`', () => {
@@ -148,7 +148,7 @@ describe('prepItemForDdbInsert', () => {
 
         // CHECK
         updatedResource[REFERENCES_FIELD] = [patient];
-        checkExpectedItemMatchActualItem(actualItem, updatedResource);
+        checkExpectedItemMatchActualItem(actualItem, updatedResource, vid);
     });
 
     test('Return item correctly when full meta field already exists', () => {
@@ -161,7 +161,7 @@ describe('prepItemForDdbInsert', () => {
         // CHECK
         updatedResource.meta.versionId = vid.toString();
         updatedResource[REFERENCES_FIELD] = [];
-        checkExpectedItemMatchActualItem(actualItem, updatedResource);
+        checkExpectedItemMatchActualItem(actualItem, updatedResource, vid);
     });
 
     test('Return item correctly when meta field does not exist yet', () => {
@@ -174,7 +174,7 @@ describe('prepItemForDdbInsert', () => {
 
         // CHECK
         updatedResource[REFERENCES_FIELD] = [];
-        checkExpectedItemMatchActualItem(actualItem, updatedResource);
+        checkExpectedItemMatchActualItem(actualItem, updatedResource, vid);
     });
 
     test('Return item correctly when meta field exist but meta does not contain versionId', () => {
@@ -187,6 +187,22 @@ describe('prepItemForDdbInsert', () => {
 
         // CHECK
         updatedResource[REFERENCES_FIELD] = [];
-        checkExpectedItemMatchActualItem(actualItem, updatedResource);
+        checkExpectedItemMatchActualItem(actualItem, updatedResource, vid);
+    });
+
+    test('Return item correctly when meta field exist with versionId', () => {
+        // BUILD
+        // We set a new vid, that 'prepItemForDdbInsert' should use even though the existing resource already contains
+        // versionId as a part of the 'meta' object. versionId should be system generated
+        const newVid = 3;
+
+        // OPERATE
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(clone(resource), id, newVid, DOCUMENT_STATUS.PENDING);
+
+        // CHECK
+        const expectedResource = clone(resource);
+        expectedResource[REFERENCES_FIELD] = [];
+
+        checkExpectedItemMatchActualItem(actualItem, expectedResource, newVid);
     });
 });
