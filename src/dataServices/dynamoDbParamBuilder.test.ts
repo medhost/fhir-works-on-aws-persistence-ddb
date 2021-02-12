@@ -430,7 +430,13 @@ describe('buildGetResourcesQueryParam', () => {
     test('Param with projection expression', () => {
         const tenantId = '123';
         const projectionExpression = 'id, resourceType, name';
-        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', 2, tenantId,  projectionExpression);
+        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(
+            id,
+            'Patient',
+            2,
+            tenantId,
+            projectionExpression,
+        );
 
         const clonedExpectedParam: any = cloneDeep(expectedParam);
         clonedExpectedParam.ProjectionExpression = projectionExpression;
