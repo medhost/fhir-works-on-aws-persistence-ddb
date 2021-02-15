@@ -22,6 +22,7 @@ export default class DynamoDbParamBuilder {
         newStatus: DOCUMENT_STATUS,
         id: string,
         vid: number,
+        resourceType: string,
         tenantId: string,
     ) {
         const currentTs = Date.now();
@@ -41,12 +42,14 @@ export default class DynamoDbParamBuilder {
                 ExpressionAttributeValues: DynamoDBConverter.marshall({
                     ':newStatus': newStatus,
                     ':futureEndTs': futureEndTs,
+                    ':resourceType': resourceType,
                 }),
+                ConditionExpression: `resourceType = :resourceType`,
             },
         };
 
         if (oldStatus) {
-            params.Update.ConditionExpression = `${DOCUMENT_STATUS_FIELD} = :oldStatus OR (${LOCK_END_TS_FIELD} < :currentTs AND (${DOCUMENT_STATUS_FIELD} = :lockStatus OR ${DOCUMENT_STATUS_FIELD} = :pendingStatus OR ${DOCUMENT_STATUS_FIELD} = :pendingDeleteStatus))`;
+            params.Update.ConditionExpression = `resourceType = :resourceType AND (${DOCUMENT_STATUS_FIELD} = :oldStatus OR (${LOCK_END_TS_FIELD} < :currentTs AND (${DOCUMENT_STATUS_FIELD} = :lockStatus OR ${DOCUMENT_STATUS_FIELD} = :pendingStatus OR ${DOCUMENT_STATUS_FIELD} = :pendingDeleteStatus)))`;
             params.Update.ExpressionAttributeValues = DynamoDBConverter.marshall({
                 ':newStatus': newStatus,
                 ':oldStatus': oldStatus,
@@ -55,6 +58,7 @@ export default class DynamoDbParamBuilder {
                 ':pendingDeleteStatus': DOCUMENT_STATUS.PENDING_DELETE,
                 ':currentTs': currentTs,
                 ':futureEndTs': futureEndTs,
+                ':resourceType': resourceType,
             });
         }
 
@@ -63,6 +67,7 @@ export default class DynamoDbParamBuilder {
 
     static buildGetResourcesQueryParam(
         id: string,
+        resourceType: string,
         maxNumberOfVersions: number,
         tenantId: string,
         projectionExpression?: string,
@@ -71,9 +76,12 @@ export default class DynamoDbParamBuilder {
             TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
             ScanIndexForward: false,
             Limit: maxNumberOfVersions,
+            FilterExpression: '#r = :resourceType',
             KeyConditionExpression: 'id = :hkey',
+            ExpressionAttributeNames: { '#r': 'resourceType' },
             ExpressionAttributeValues: DynamoDBConverter.marshall({
                 ':hkey': id,
+                ':resourceType': resourceType,
             }),
         };
 
@@ -108,12 +116,29 @@ export default class DynamoDbParamBuilder {
         };
     }
 
-    static buildPutAvailableItemParam(item: any, id: string, vid: number, tenantId: string) {
+    /**
+     * Build DDB PUT param to insert a new resource
+     * @param item - The object to be created and stored in DDB
+     * @param allowOverwriteId - Allow overwriting a resource with the same id
+     * @return DDB params for PUT operation
+     */
+    static buildPutAvailableItemParam(
+        item: any,
+        id: string,
+        vid: number,
+        tenantId: string,
+        allowOverwriteId: boolean = false,
+    ) {
         const newItem = DynamoDbUtil.prepItemForDdbInsert(item, id, vid, DOCUMENT_STATUS.AVAILABLE);
-        return {
+        const param: any = {
             TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
             Item: DynamoDBConverter.marshall(newItem),
         };
+
+        if (!allowOverwriteId) {
+            param.ConditionExpression = 'attribute_not_exists(id)';
+        }
+        return param;
     }
 
     static buildPutCreateExportRequest(bulkExportJob: BulkExportJob) {

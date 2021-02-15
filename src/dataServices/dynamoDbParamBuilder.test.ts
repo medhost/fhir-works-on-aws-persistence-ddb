@@ -4,11 +4,13 @@
  */
 
 import each from 'jest-each';
+import { cloneDeep } from 'lodash';
 import DynamoDbParamBuilder from './dynamoDbParamBuilder';
 import DOCUMENT_STATUS from './documentStatus';
-import { timeFromEpochInMsRegExp } from '../../testUtilities/regExpressions';
+import { timeFromEpochInMsRegExp, utcTimeRegExp } from '../../testUtilities/regExpressions';
 
 describe('buildUpdateDocumentStatusParam', () => {
+    const resourceType = 'Patient';
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
@@ -24,6 +26,7 @@ describe('buildUpdateDocumentStatusParam', () => {
                 DOCUMENT_STATUS.LOCKED,
                 id,
                 vid,
+                resourceType,
                 tenantId,
             );
 
@@ -52,6 +55,9 @@ describe('buildUpdateDocumentStatusParam', () => {
                         ':pendingStatus': {
                             S: 'PENDING',
                         },
+                        ':resourceType': {
+                            S: 'Patient',
+                        },
                         ':lockStatus': {
                             S: 'LOCKED',
                         },
@@ -63,7 +69,7 @@ describe('buildUpdateDocumentStatusParam', () => {
                         },
                     },
                     ConditionExpression:
-                        'documentStatus = :oldStatus OR (lockEndTs < :currentTs AND (documentStatus = :lockStatus OR documentStatus = :pendingStatus OR documentStatus = :pendingDeleteStatus))',
+                        'resourceType = :resourceType AND (documentStatus = :oldStatus OR (lockEndTs < :currentTs AND (documentStatus = :lockStatus OR documentStatus = :pendingStatus OR documentStatus = :pendingDeleteStatus)))',
                 },
             };
 
@@ -93,6 +99,7 @@ describe('buildUpdateDocumentStatusParam', () => {
                     },
                 },
                 UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
+                ConditionExpression: 'resourceType = :resourceType',
                 ExpressionAttributeValues: {
                     ':newStatus': {
                         S: documentStatus,
@@ -100,11 +107,15 @@ describe('buildUpdateDocumentStatusParam', () => {
                     ':futureEndTs': {
                         N: expect.stringMatching(timeFromEpochInMsRegExp),
                     },
+                    ':resourceType': {
+                        S: 'Patient',
+                    },
                 },
             },
         };
     };
     const wiggleRoomInMs = 1 * 300;
+
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
@@ -118,6 +129,7 @@ describe('buildUpdateDocumentStatusParam', () => {
                 DOCUMENT_STATUS.LOCKED,
                 id,
                 vid,
+                resourceType,
                 tenantId,
             );
 
@@ -127,7 +139,9 @@ describe('buildUpdateDocumentStatusParam', () => {
             const currentTs = Date.now();
 
             // Future timeStamp should be approximately DynamoDbParamBuilder.LOCK_DURATION_IN_MS time from now
-            expect(futureTs).toBeLessThanOrEqual(currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS + wiggleRoomInMs);
+            expect(futureTs).toBeLessThanOrEqual(
+                currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS + wiggleRoomInMs,
+            );
             expect(futureTs).toBeGreaterThanOrEqual(
                 currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS - wiggleRoomInMs,
             );
@@ -152,6 +166,7 @@ describe('buildUpdateDocumentStatusParam', () => {
                 DOCUMENT_STATUS.AVAILABLE,
                 id,
                 vid,
+                resourceType,
                 tenantId,
             );
 
@@ -184,13 +199,15 @@ describe('buildPutAvailableItemParam', () => {
             ],
             gender: 'male',
             meta: {
-                lastUpdated: '2020-03-26T15:46:55.848Z',
+                lastUpdated: {
+                    S: expect.stringMatching(utcTimeRegExp),
+                },
                 versionId: vid.toString(),
             },
         };
         const tenantId = '';
         const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
-        const expectedParams = {
+        const expectedParams: any = {
             TableName: '',
             Item: {
                 _references: {
@@ -232,7 +249,7 @@ describe('buildPutAvailableItemParam', () => {
                 meta: {
                     M: {
                         lastUpdated: {
-                            S: '2020-03-26T15:46:55.848Z',
+                            S: expect.stringMatching(utcTimeRegExp),
                         },
                         versionId: {
                             S: '1',
@@ -246,6 +263,7 @@ describe('buildPutAvailableItemParam', () => {
                     N: expect.stringMatching(timeFromEpochInMsRegExp),
                 },
             },
+            ConditionExpression: 'attribute_not_exists(id)',
         };
 
         expect(actualParams).toEqual(expectedParams);
@@ -265,7 +283,9 @@ describe('buildPutAvailableItemParam', () => {
             ],
             gender: 'male',
             meta: {
-                lastUpdated: '2020-03-26T15:46:55.848Z',
+                lastUpdated: {
+                    S: expect.stringMatching(utcTimeRegExp),
+                },
                 versionId: vid.toString(),
             },
         };
@@ -273,6 +293,7 @@ describe('buildPutAvailableItemParam', () => {
         const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
         const expectedParams = {
             TableName: '-123',
+            ConditionExpression: 'attribute_not_exists(id)',
             Item: {
                 _references: {
                     L: [],
@@ -313,7 +334,7 @@ describe('buildPutAvailableItemParam', () => {
                 meta: {
                     M: {
                         lastUpdated: {
-                            S: '2020-03-26T15:46:55.848Z',
+                            S: expect.stringMatching(utcTimeRegExp),
                         },
                         versionId: {
                             S: '1',
@@ -334,6 +355,7 @@ describe('buildPutAvailableItemParam', () => {
 });
 
 describe('Multi-tenancy in DynamoDB', () => {
+    const resourceType = 'Patient';
     test('buildUpdateDocumentStatusParam', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
@@ -344,6 +366,7 @@ describe('Multi-tenancy in DynamoDB', () => {
             DOCUMENT_STATUS.LOCKED,
             id,
             vid,
+            resourceType,
             tenantId,
         );
         expect(result.Update.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
@@ -380,7 +403,45 @@ describe('Multi-tenancy in DynamoDB', () => {
         const vid = 1;
         const tenantId = '123';
         const tableName = '-123';
-        const result = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, vid, tenantId);
+        const result = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', vid, tenantId);
         expect(result.TableName).toEqual(tableName); // RESOURCE_TABLE is ''
+    });
+});
+
+describe('buildGetResourcesQueryParam', () => {
+    const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+    const expectedParam = {
+        TableName: '-123',
+        ScanIndexForward: false,
+        Limit: 2,
+        FilterExpression: '#r = :resourceType',
+        KeyConditionExpression: 'id = :hkey',
+        ExpressionAttributeNames: { '#r': 'resourceType' },
+        ExpressionAttributeValues: {
+            ':hkey': { S: '8cafa46d-08b4-4ee4-b51b-803e20ae8126' },
+            ':resourceType': { S: 'Patient' },
+        },
+    };
+    test('Param without projection expression', () => {
+        const tenantId = '123';
+        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(id, 'Patient', 2, tenantId);
+        expect(actualParam).toEqual(expectedParam);
+    });
+
+    test('Param with projection expression', () => {
+        const tenantId = '123';
+        const projectionExpression = 'id, resourceType, name';
+        const actualParam = DynamoDbParamBuilder.buildGetResourcesQueryParam(
+            id,
+            'Patient',
+            2,
+            tenantId,
+            projectionExpression,
+        );
+
+        const clonedExpectedParam: any = cloneDeep(expectedParam);
+        clonedExpectedParam.ProjectionExpression = projectionExpression;
+
+        expect(actualParam).toEqual(clonedExpectedParam);
     });
 });
