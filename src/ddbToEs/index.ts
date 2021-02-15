@@ -56,6 +56,7 @@ export async function handleDdbToEsEvent(event: any) {
             }
 
             const resourceType = tenantId ? `${tenantId}-${image.resourceType}` : image.resourceType;
+            console.log('resourceType: ', resourceType);
             // eslint-disable-next-line no-await-in-loop
             await ddbToEsHelper.createIndexIfNotExist(resourceType.toLowerCase());
             if (record.eventName === REMOVE) {

@@ -84,6 +84,7 @@ export default class DdbToEsHelper {
     // Getting promise params for actual deletion of the record from ES
     // eslint-disable-next-line class-methods-use-this
     getDeleteRecordPromiseParam(image: any, indexName: string): PromiseParamAndId {
+
         const { id, vid } = image;
         const compositeId = this.generateFullId(id, vid);
         return {
