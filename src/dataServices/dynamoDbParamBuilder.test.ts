@@ -185,89 +185,93 @@ describe('buildUpdateDocumentStatusParam', () => {
 });
 
 describe('buildPutAvailableItemParam', () => {
-    test('check that param has the fields documentStatus, lockEndTs, and references  with default tenant', () => {
-        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-        const vid = 1;
-        const item = {
-            resourceType: 'Patient',
-            id,
-            name: [
-                {
-                    family: 'Jameson',
-                    given: ['Matt'],
+    each(['', 'custom-tenant']).it(
+        'check that param has the fields documentStatus, lockEndTs, and references',
+        tenantId => {
+            const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+            const vid = 1;
+            const item = {
+                resourceType: 'Patient',
+                id,
+                name: [
+                    {
+                        family: 'Jameson',
+                        given: ['Matt'],
+                    },
+                ],
+                gender: 'male',
+                meta: {
+                    lastUpdated: {
+                        S: expect.stringMatching(utcTimeRegExp),
+                    },
+                    versionId: vid.toString(),
                 },
-            ],
-            gender: 'male',
-            meta: {
-                lastUpdated: {
-                    S: expect.stringMatching(utcTimeRegExp),
-                },
-                versionId: vid.toString(),
-            },
-        };
-        const tenantId = '';
-        const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
-        const expectedParams: any = {
-            TableName: '',
-            Item: {
-                _references: {
-                    L: [],
-                },
-                resourceType: {
-                    S: 'Patient',
-                },
-                id: {
-                    S: id,
-                },
-                vid: {
-                    N: vid.toString(),
-                },
-                name: {
-                    L: [
-                        {
-                            M: {
-                                family: {
-                                    S: 'Jameson',
-                                },
-                                given: {
-                                    L: [
-                                        {
-                                            S: 'Matt',
-                                        },
-                                    ],
+            };
+
+            const actualParams = DynamoDbParamBuilder.buildPutAvailableItemParam(item, id, vid, tenantId);
+
+            const expectedParams: any = {
+                TableName: tenantId ? `-${tenantId}` : '',
+                Item: {
+                    _references: {
+                        L: [],
+                    },
+                    resourceType: {
+                        S: 'Patient',
+                    },
+                    id: {
+                        S: id,
+                    },
+                    vid: {
+                        N: vid.toString(),
+                    },
+                    name: {
+                        L: [
+                            {
+                                M: {
+                                    family: {
+                                        S: 'Jameson',
+                                    },
+                                    given: {
+                                        L: [
+                                            {
+                                                S: 'Matt',
+                                            },
+                                        ],
+                                    },
                                 },
                             },
-                        },
-                    ],
-                },
-                gender: {
-                    S: 'male',
-                },
-                externalId: {
-                    S: id,
-                },
-                meta: {
-                    M: {
-                        lastUpdated: {
-                            S: expect.stringMatching(utcTimeRegExp),
-                        },
-                        versionId: {
-                            S: '1',
+                        ],
+                    },
+                    gender: {
+                        S: 'male',
+                    },
+                    externalId: {
+                        S: id,
+                    },
+                    meta: {
+                        M: {
+                            lastUpdated: {
+                                S: expect.stringMatching(utcTimeRegExp),
+                            },
+                            versionId: {
+                                S: '1',
+                            },
                         },
                     },
+                    documentStatus: {
+                        S: 'AVAILABLE',
+                    },
+                    lockEndTs: {
+                        N: expect.stringMatching(timeFromEpochInMsRegExp),
+                    },
                 },
-                documentStatus: {
-                    S: 'AVAILABLE',
-                },
-                lockEndTs: {
-                    N: expect.stringMatching(timeFromEpochInMsRegExp),
-                },
-            },
-            ConditionExpression: 'attribute_not_exists(id)',
-        };
+                ConditionExpression: 'attribute_not_exists(id)',
+            };
 
-        expect(actualParams).toEqual(expectedParams);
-    });
+            expect(actualParams).toEqual(expectedParams);
+        },
+    );
     test('check that param has the fields documentStatus and lockEndTs with custom tenant', () => {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
