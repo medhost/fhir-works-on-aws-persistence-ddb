@@ -139,9 +139,7 @@ describe('buildUpdateDocumentStatusParam', () => {
             const currentTs = Date.now();
 
             // Future timeStamp should be approximately DynamoDbParamBuilder.LOCK_DURATION_IN_MS time from now
-            expect(futureTs).toBeLessThanOrEqual(
-                currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS + wiggleRoomInMs,
-            );
+            expect(futureTs).toBeLessThanOrEqual(currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS + wiggleRoomInMs);
             expect(futureTs).toBeGreaterThanOrEqual(
                 currentTs + DynamoDbParamBuilder.LOCK_DURATION_IN_MS - wiggleRoomInMs,
             );

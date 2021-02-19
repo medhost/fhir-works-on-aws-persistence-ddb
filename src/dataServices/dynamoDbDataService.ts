@@ -51,6 +51,7 @@ const buildExportJob = (initiateExportRequest: InitiateExportRequest): BulkExpor
         transactionTime: initiateExportRequest.transactionTime,
         jobStatus: initialStatus,
         jobFailedMessage: '',
+        tenantId: initiateExportRequest.tenantId ?? '',
     };
 };
 
@@ -268,6 +269,7 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
             since,
             type,
             groupId,
+            tenantId,
             errorArray = [],
             errorMessage = '',
         } = item;
@@ -284,6 +286,7 @@ export class DynamoDbDataService implements Persistence, BulkDataAccess {
             since,
             type,
             groupId,
+            tenantId,
             errorArray,
             errorMessage,
         };
