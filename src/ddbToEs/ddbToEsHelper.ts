@@ -83,14 +83,14 @@ export default class DdbToEsHelper {
 
     // Getting promise params for actual deletion of the record from ES
     // eslint-disable-next-line class-methods-use-this
-    getDeleteRecordPromiseParam(image: any, indexName: string): PromiseParamAndId {
-
+    getDeleteRecordPromiseParam(image: any, indexName: string, tenantId: string): PromiseParamAndId {
         const { id, vid } = image;
         const compositeId = this.generateFullId(id, vid);
         return {
             promiseParam: {
                 index: indexName,
                 id: compositeId,
+                tenantId: tenantId,
             },
             id: compositeId,
             type: 'delete',
@@ -99,7 +99,7 @@ export default class DdbToEsHelper {
 
     // Getting promise params for inserting a new record or editing a record
     // eslint-disable-next-line class-methods-use-this
-    getUpsertRecordPromiseParam(newImage: any, indexName: string): PromiseParamAndId | null {
+    getUpsertRecordPromiseParam(newImage: any, indexName: string, tenantId: string): PromiseParamAndId | null {
         // We only perform operations on records with documentStatus === AVAILABLE || DELETED
         if (
             newImage[DOCUMENT_STATUS_FIELD] !== DOCUMENT_STATUS.AVAILABLE &&
@@ -119,6 +119,7 @@ export default class DdbToEsHelper {
             promiseParam: {
                 index: indexName,
                 id: compositeId,
+                tenantId: tenantId,
                 body: {
                     doc: newImage,
                     doc_as_upsert: true,
