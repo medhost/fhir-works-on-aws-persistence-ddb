@@ -41,7 +41,7 @@ afterEach(() => {
     AWSMock.restore();
 });
 
-describe('CREATE with default tenant', () => {
+describe('CREATE with default and custom tenant', () => {
     afterEach(() => {
         AWSMock.restore();
     });
@@ -95,7 +95,7 @@ describe('CREATE with default tenant', () => {
     });
 });
 
-describe('READ with default tenant', () => {
+describe('READ with default and custom tenant', () => {
     // beforeEach(() => {
     //     // Ensures that for each test, we test the assertions in the catch block
     //     expect.hasAssertions();
@@ -211,7 +211,7 @@ describe('READ with default tenant', () => {
     );
 });
 
-describe('UPDATE with default tenant', () => {
+describe('UPDATE with default and custom tenant', () => {
     afterEach(() => {
         AWSMock.restore();
         sinon.restore();
@@ -279,7 +279,7 @@ describe('UPDATE with default tenant', () => {
     });
 });
 
-describe('DELETE with default tenant', () => {
+describe('DELETE with default and custom tenant', () => {
     afterEach(() => {
         AWSMock.restore();
         sinon.restore();

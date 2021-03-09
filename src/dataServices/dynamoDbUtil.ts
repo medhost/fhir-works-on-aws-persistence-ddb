@@ -7,6 +7,7 @@ import { clone, generateMeta } from 'fhir-works-on-aws-interface';
 import flatten from 'flat';
 import { SEPARATOR } from '../constants';
 import DOCUMENT_STATUS from './documentStatus';
+import { RESOURCE_TABLE } from './dynamoDb';
 
 export const DOCUMENT_STATUS_FIELD = 'documentStatus';
 export const LOCK_END_TS_FIELD = 'lockEndTs';
@@ -61,5 +62,9 @@ export class DynamoDbUtil {
             });
         item[REFERENCES_FIELD] = references;
         return item;
+    }
+
+    static getTableName(tenantId: string = ''): string {
+        return tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE;
     }
 }

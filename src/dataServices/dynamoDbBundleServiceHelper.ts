@@ -37,6 +37,8 @@ export default class DynamoDbBundleServiceHelper {
         let newLocks: ItemRequest[] = [];
         let newBundleEntryResponses: BatchReadWriteResponse[] = [];
 
+        const tableName: string = DynamoDbUtil.getTableName(tenantId);
+
         requests.forEach(request => {
             switch (request.operation) {
                 case 'create': {
@@ -50,7 +52,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     createRequests.push({
                         Put: {
-                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                            TableName: tableName,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -74,7 +76,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     updateRequests.push({
                         Put: {
-                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                            TableName: tableName,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -120,7 +122,7 @@ export default class DynamoDbBundleServiceHelper {
                     const vid = idToVersionId[id];
                     readRequests.push({
                         Get: {
-                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                            TableName: tableName,
                             Key: DynamoDBConverter.marshall({
                                 id,
                                 vid,
@@ -188,7 +190,7 @@ export default class DynamoDbBundleServiceHelper {
     }
 
     private static generateDeleteLatestRecordAndItemToRemoveFromLock(resourceType: string, id: string, vid: string) {
-        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10), ''); // TODO add tenantID support for bundle requests
+        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10)); // TODO add tenantID support for bundle requests
         const itemToRemoveFromLock = {
             id,
             vid,
