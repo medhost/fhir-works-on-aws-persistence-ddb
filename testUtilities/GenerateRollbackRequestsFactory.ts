@@ -52,12 +52,12 @@ export default class GenerateRollbackRequestsFactory {
         return bundleEntryResponse;
     }
 
-    static buildExpectedBundleEntryResult(bundleEntryResponse: BatchReadWriteResponse) {
+    static buildExpectedBundleEntryResult(bundleEntryResponse: BatchReadWriteResponse, tenantId: string = '') {
         const { id, vid, resourceType, operation } = bundleEntryResponse;
         let expectedResult: any = {};
         if (operation === 'create' || operation === 'update') {
             expectedResult = {
-                transactionRequests: [DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10))],
+                transactionRequests: [DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10), tenantId)],
                 itemsToRemoveFromLock: [
                     {
                         id,

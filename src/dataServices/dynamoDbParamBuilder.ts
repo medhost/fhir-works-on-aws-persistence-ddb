@@ -92,7 +92,7 @@ export default class DynamoDbParamBuilder {
         return params;
     }
 
-    static buildDeleteParam(id: string, vid: number, tenantId: string = '') {
+    static buildDeleteParam(id: string, vid: number, tenantId: string) {
         const params: any = {
             Delete: {
                 TableName: DynamoDbUtil.getTableName(tenantId),
