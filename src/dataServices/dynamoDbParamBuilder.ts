@@ -33,7 +33,7 @@ export default class DynamoDbParamBuilder {
 
         const params: any = {
             Update: {
-                TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                TableName: DynamoDbUtil.getTableName(tenantId),
                 Key: DynamoDBConverter.marshall({
                     id,
                     vid,
@@ -73,7 +73,7 @@ export default class DynamoDbParamBuilder {
         projectionExpression?: string,
     ) {
         const params: any = {
-            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+            TableName: DynamoDbUtil.getTableName(tenantId),
             ScanIndexForward: false,
             Limit: maxNumberOfVersions,
             FilterExpression: '#r = :resourceType',
@@ -95,7 +95,7 @@ export default class DynamoDbParamBuilder {
     static buildDeleteParam(id: string, vid: number, tenantId: string) {
         const params: any = {
             Delete: {
-                TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                TableName: DynamoDbUtil.getTableName(tenantId),
                 Key: DynamoDBConverter.marshall({
                     id,
                     vid,
@@ -108,7 +108,7 @@ export default class DynamoDbParamBuilder {
 
     static buildGetItemParam(id: string, vid: number, tenantId: string) {
         return {
-            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+            TableName: DynamoDbUtil.getTableName(tenantId),
             Key: DynamoDBConverter.marshall({
                 id,
                 vid,
@@ -131,7 +131,7 @@ export default class DynamoDbParamBuilder {
     ) {
         const newItem = DynamoDbUtil.prepItemForDdbInsert(item, id, vid, DOCUMENT_STATUS.AVAILABLE);
         const param: any = {
-            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+            TableName: DynamoDbUtil.getTableName(tenantId),
             Item: DynamoDBConverter.marshall(newItem),
         };
 

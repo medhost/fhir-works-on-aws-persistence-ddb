@@ -55,15 +55,15 @@ export async function handleDdbToEsEvent(event: any) {
                 continue;
             }
 
-            const resourceType = tenantId ? `${tenantId}-${image.resourceType}` : image.resourceType;
+            const indexName = tenantId ? `${tenantId}-${image.resourceType}` : image.resourceType;
             // eslint-disable-next-line no-await-in-loop
-            await ddbToEsHelper.createIndexIfNotExist(resourceType.toLowerCase());
+            await ddbToEsHelper.createIndexIfNotExist(indexName.toLowerCase());
             if (record.eventName === REMOVE) {
                 // If a user manually deletes a record from DDB, let's delete it from ES also
-                const idAndDeletePromise = ddbToEsHelper.getDeleteRecordPromiseParam(image, resourceType.toLowerCase());
+                const idAndDeletePromise = ddbToEsHelper.getDeleteRecordPromiseParam(image, indexName.toLowerCase());
                 promiseParamAndIds.push(idAndDeletePromise);
             } else {
-                const idAndUpsertPromise = ddbToEsHelper.getUpsertRecordPromiseParam(image, resourceType.toLowerCase());
+                const idAndUpsertPromise = ddbToEsHelper.getUpsertRecordPromiseParam(image, indexName.toLowerCase());
                 if (idAndUpsertPromise) {
                     promiseParamAndIds.push(idAndUpsertPromise);
                 }
