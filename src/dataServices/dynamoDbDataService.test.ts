@@ -343,6 +343,7 @@ describe('initiateExport', () => {
         since: '2020-08-01T12:00:00Z',
         type: 'Patient',
         groupId: '1',
+        tenantId: 'custom-tenant',
     };
 
     test('Successful initiate export request', async () => {
@@ -510,6 +511,7 @@ describe('getExportStatus', () => {
                     jobStatus: 'in-progress',
                     stepFunctionExecutionArn: '',
                     type: 'Patient',
+                    tenantId: '',
                 }),
             });
         });
@@ -531,6 +533,7 @@ describe('getExportStatus', () => {
             groupId: '',
             errorArray: [],
             errorMessage: '',
+            tenantId: '',
         });
     });
 });
