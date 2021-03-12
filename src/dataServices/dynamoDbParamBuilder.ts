@@ -4,12 +4,7 @@
  */
 
 import { ExportJobStatus } from 'fhir-works-on-aws-interface';
-import {
-    DynamoDBConverter,
-    RESOURCE_TABLE,
-    EXPORT_REQUEST_TABLE,
-    EXPORT_REQUEST_TABLE_JOB_STATUS_INDEX,
-} from './dynamoDb';
+import { DynamoDBConverter, EXPORT_REQUEST_TABLE, EXPORT_REQUEST_TABLE_JOB_STATUS_INDEX } from './dynamoDb';
 import { DynamoDbUtil, DOCUMENT_STATUS_FIELD, LOCK_END_TS_FIELD } from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
 import { BulkExportJob } from '../bulkExport/types';

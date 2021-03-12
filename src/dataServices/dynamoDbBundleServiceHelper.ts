@@ -12,7 +12,7 @@ import {
 } from 'fhir-works-on-aws-interface';
 import { DynamoDbUtil } from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
-import { DynamoDBConverter, RESOURCE_TABLE } from './dynamoDb';
+import { DynamoDBConverter } from './dynamoDb';
 import DynamoDbParamBuilder from './dynamoDbParamBuilder';
 
 export interface ItemRequest {
@@ -190,7 +190,7 @@ export default class DynamoDbBundleServiceHelper {
     }
 
     private static generateDeleteLatestRecordAndItemToRemoveFromLock(resourceType: string, id: string, vid: string) {
-        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10)); // TODO add tenantID support for bundle requests
+        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10), ''); // TODO add tenantID support for bundle requests
         const itemToRemoveFromLock = {
             id,
             vid,
