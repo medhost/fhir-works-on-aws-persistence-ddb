@@ -280,7 +280,7 @@ describe('UPDATE with default and custom tenant', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('ERROR: Update Resource not present in DynamoDB', async () => {
+    each(['', 'custom-tenant']).test('ERROR: Update Resource not present in DynamoDB', async tenantId => {
         // BUILD
         const id = 'd3847e9f-a551-47b0-b8d9-fcb7d324bc2b';
         const resource = {
@@ -301,7 +301,7 @@ describe('UPDATE with default and custom tenant', () => {
 
         // OPERATE
         try {
-            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource, tenantId });
         } catch (e) {
             // CHECK
             expect(isResourceNotFoundError(e)).toEqual(true);
@@ -309,7 +309,7 @@ describe('UPDATE with default and custom tenant', () => {
         }
     });
 
-    test('SUCCESS: Update Resource as Create', async () => {
+    each(['', 'custom-tenant']).test('SUCCESS: Update Resource as Create', async tenantId => {
         // BUILD
         const id = 'e264efb1-147e-43ac-92ea-a050bc236ff3';
         const resourceType = 'Patient';
@@ -331,7 +331,12 @@ describe('UPDATE with default and custom tenant', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB(), true);
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+        const serviceResponse = await dynamoDbDataService.updateResource({
+            resourceType: 'Patient',
+            id,
+            resource,
+            tenantId,
+        });
 
         // CHECK
         const expectedResource: any = { ...resource };
@@ -346,7 +351,7 @@ describe('UPDATE with default and custom tenant', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('ERROR: Id supplied for Update as Create is not valid', async () => {
+    each(['', 'custom-tenant']).test('ERROR: Id supplied for Update as Create is not valid', async tenantId => {
         // BUILD
         const id = 'uuid:$deadbeef';
         const resourceType = 'Patient';
@@ -365,7 +370,7 @@ describe('UPDATE with default and custom tenant', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB(), true);
         // OPERATE
         try {
-            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource, tenantId });
         } catch (e) {
             // CHECK
             expect(isInvalidResourceError(e)).toEqual(true);
