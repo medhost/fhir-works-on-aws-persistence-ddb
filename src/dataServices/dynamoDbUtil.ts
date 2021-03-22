@@ -11,7 +11,6 @@ import { RESOURCE_TABLE } from './dynamoDb';
 
 export const DOCUMENT_STATUS_FIELD = 'documentStatus';
 export const LOCK_END_TS_FIELD = 'lockEndTs';
-export const EXTERNAL_ID_FIELD = 'externalId';
 export const VID_FIELD = 'vid';
 export const REFERENCES_FIELD = '_references';
 
@@ -23,7 +22,6 @@ export class DynamoDbUtil {
         delete cleanedItem[LOCK_END_TS_FIELD];
         delete cleanedItem[VID_FIELD];
         delete cleanedItem[REFERENCES_FIELD];
-        delete cleanedItem[EXTERNAL_ID_FIELD];
 
         // Return id instead of full id (this is only a concern in results from ES)
         const id = item.id.split(SEPARATOR)[0];
@@ -47,7 +45,6 @@ export class DynamoDbUtil {
 
         item[DOCUMENT_STATUS_FIELD] = documentStatus;
         item[LOCK_END_TS_FIELD] = Date.now();
-        item[EXTERNAL_ID_FIELD] = id;
 
         // Format of flattenedResource
         // https://www.npmjs.com/package/flat
