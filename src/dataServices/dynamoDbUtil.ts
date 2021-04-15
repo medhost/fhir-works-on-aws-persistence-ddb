@@ -13,6 +13,7 @@ export const DOCUMENT_STATUS_FIELD = 'documentStatus';
 export const LOCK_END_TS_FIELD = 'lockEndTs';
 export const VID_FIELD = 'vid';
 export const REFERENCES_FIELD = '_references';
+export const EXTERNAL_ID_FIELD = 'id';
 
 export class DynamoDbUtil {
     static cleanItem(item: any) {

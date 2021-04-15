@@ -84,7 +84,7 @@ describe('CREATE with default and custom tenant', () => {
         expect(serviceResponse.message).toEqual('Resource created');
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
-    test('SUCCESS: Create Resource with meta', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Create Resource with meta', async tenantId => {
         const resourceWithMeta = {
             ...resource,
             meta: {
@@ -102,7 +102,7 @@ describe('CREATE with default and custom tenant', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.createResource({ resource: resourceWithMeta, resourceType });
+        const serviceResponse = await dynamoDbDataService.createResource({ resource: resourceWithMeta, resourceType,  tenantId });
 
         // CHECK
         const expectedResource: any = { ...resourceWithMeta };
@@ -319,7 +319,7 @@ describe('UPDATE with default and custom tenant', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('SUCCESS: Update Resource with existing meta', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Update Resource with existing meta', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const resourcev1 = {
@@ -376,6 +376,7 @@ describe('UPDATE with default and custom tenant', () => {
             resourceType: 'Patient',
             id,
             resource: input,
+            tenantId,
         });
 
         // CHECK

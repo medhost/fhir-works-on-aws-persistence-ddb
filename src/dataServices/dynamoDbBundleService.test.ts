@@ -161,7 +161,6 @@ describe('atomicallyReadWriteResources', () => {
                     },
                 ],
                 gender: 'male',
-                meta: { security: 'gondor' },
             };
 
             const organization = 'Organization/1';
@@ -191,12 +190,10 @@ describe('atomicallyReadWriteResources', () => {
 
             const insertedResourceJson: any = {
                 ...resource,
-                externalId: id,
                 id: 'holder',
                 meta: {
                     lastUpdated: 'holder',
                     versionId: '1',
-                    security: 'gondor',
                 },
             };
             insertedResourceJson[DOCUMENT_STATUS_FIELD] = 'PENDING';
@@ -209,7 +206,9 @@ describe('atomicallyReadWriteResources', () => {
             // Setting up test assertions
             insertedResource.id.S = expect.stringMatching(uuidRegExp);
             insertedResource[LOCK_END_TS_FIELD].N = expect.stringMatching(timeFromEpochInMsRegExp);
-            insertedResource.meta!.M!.lastUpdated.S = expect.stringMatching(utcTimeRegExp);
+            if (insertedResource.meta.M) {
+                insertedResource.meta.M.lastUpdated.S = expect.stringMatching(utcTimeRegExp);
+            }
 
             // 1. create new Patient record with documentStatus of 'PENDING'
             expect(transactWriteItemSpy.getCall(0).args[0]).toStrictEqual({
@@ -238,7 +237,9 @@ describe('atomicallyReadWriteResources', () => {
                             ExpressionAttributeValues: {
                                 ':newStatus': { S: 'AVAILABLE' },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
-                                ':resourceType': { S: 'Patient' },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
@@ -296,11 +297,7 @@ describe('atomicallyReadWriteResources', () => {
                     reference: organization,
                 };
             }
-            const newResource = {
-                ...oldResource,
-                test: 'test',
-                meta: { versionId: newVid.toString(), lastUpdated: new Date().toISOString(), security: 'skynet' },
-            };
+            const newResource = { ...oldResource, test: 'test' };
 
             sinon
                 .stub(DynamoDbHelper.prototype, 'getMostRecentResource')
@@ -348,7 +345,9 @@ describe('atomicallyReadWriteResources', () => {
                                 ':pendingStatus': { S: 'PENDING' },
                                 ':currentTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
-                                ':resourceType': { S: 'Patient' },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
