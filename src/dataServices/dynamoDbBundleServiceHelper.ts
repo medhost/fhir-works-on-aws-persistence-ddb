@@ -12,7 +12,7 @@ import {
 } from 'fhir-works-on-aws-interface';
 import { DynamoDbUtil } from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
-import { DynamoDBConverter, RESOURCE_TABLE } from './dynamoDb';
+import { DynamoDBConverter } from './dynamoDb';
 import DynamoDbParamBuilder from './dynamoDbParamBuilder';
 
 export interface ItemRequest {
@@ -37,6 +37,8 @@ export default class DynamoDbBundleServiceHelper {
         let newLocks: ItemRequest[] = [];
         let newBundleEntryResponses: BatchReadWriteResponse[] = [];
 
+        const tableName: string = DynamoDbUtil.getTableName(tenantId);
+
         requests.forEach(request => {
             switch (request.operation) {
                 case 'create': {
@@ -50,7 +52,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     createRequests.push({
                         Put: {
-                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                            TableName: tableName,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -74,7 +76,7 @@ export default class DynamoDbBundleServiceHelper {
 
                     updateRequests.push({
                         Put: {
-                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                            TableName: tableName,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -120,7 +122,7 @@ export default class DynamoDbBundleServiceHelper {
                     const vid = idToVersionId[id];
                     readRequests.push({
                         Get: {
-                            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                            TableName: tableName,
                             Key: DynamoDBConverter.marshall({
                                 id,
                                 vid,

@@ -190,7 +190,6 @@ describe('atomicallyReadWriteResources', () => {
 
             const insertedResourceJson: any = {
                 ...resource,
-                externalId: id,
                 id: 'holder',
                 meta: {
                     lastUpdated: 'holder',
