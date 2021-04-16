@@ -60,7 +60,7 @@ describe('CREATE with default and custom tenant', () => {
             },
         ],
     };
-    each(['', 'custom-tenant']).it('SUCCESS: Create Resource', async tenantId => {
+    each(['', 'custom-tenant']).it('SUCCESS: Create Resource without meta', async tenantId => {
         // READ items (Success)
         AWSMock.mock('DynamoDB', 'putItem', (params: PutItemInput, callback: Function) => {
             callback(null, 'success');
@@ -74,6 +74,40 @@ describe('CREATE with default and custom tenant', () => {
         // CHECK
         const expectedResource: any = { ...resource };
         expectedResource.meta = {
+            ...expectedResource.meta,
+            versionId: '1',
+            lastUpdated: expect.stringMatching(utcTimeRegExp),
+        };
+        expectedResource.id = expect.stringMatching(uuidRegExp);
+
+        expect(serviceResponse.success).toEqual(true);
+        expect(serviceResponse.message).toEqual('Resource created');
+        expect(serviceResponse.resource).toStrictEqual(expectedResource);
+    });
+    each(['', 'custom-tenant']).it('SUCCESS: Create Resource with meta', async tenantId => {
+        const resourceWithMeta = {
+            ...resource,
+            meta: {
+                versionId: 'shouldBeOverwritten',
+                lastUpdated: 'yesterday',
+                security: { system: 'skynet' },
+                tag: [{ display: 'test' }, { display: 'test1' }],
+            },
+        };
+        // READ items (Success)
+        AWSMock.mock('DynamoDB', 'putItem', (params: PutItemInput, callback: Function) => {
+            callback(null, 'success');
+        });
+
+        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+
+        // OPERATE
+        const serviceResponse = await dynamoDbDataService.createResource({ resource: resourceWithMeta, resourceType,  tenantId });
+
+        // CHECK
+        const expectedResource: any = { ...resourceWithMeta };
+        expectedResource.meta = {
+            ...expectedResource.meta,
             versionId: '1',
             lastUpdated: expect.stringMatching(utcTimeRegExp),
         };
@@ -219,10 +253,10 @@ describe('UPDATE with default and custom tenant', () => {
         sinon.restore();
     });
 
-    each(['', 'custom-tenant']).it('SUCCESS: Update Resource', async tenantId => {
+    each(['', 'custom-tenant']).it('SUCCESS: Update Resource without existing metadata', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-        const resource = {
+        const resourcev1 = {
             id,
             vid: 1,
             resourceType: 'Patient',
@@ -236,9 +270,10 @@ describe('UPDATE with default and custom tenant', () => {
 
         sinon
             .stub(DynamoDbHelper.prototype, 'getMostRecentUserReadableResource')
-            .returns(Promise.resolve({ message: 'Resource found', resource }));
+            .returns(Promise.resolve({ message: 'Resource found', resource: resourcev1 }));
 
         const vid = 2;
+        const lastModified = '2020-06-18T20:20:12.763Z';
         const batchReadWriteServiceResponse: BundleResponse = {
             success: true,
             message: '',
@@ -248,7 +283,83 @@ describe('UPDATE with default and custom tenant', () => {
                     vid: vid.toString(),
                     resourceType: 'Patient',
                     operation: 'update',
-                    resource: {},
+                    resource: {
+                        ...resourcev1,
+                        meta: { versionId: vid.toString(), lastUpdated: lastModified, security: { system: 'gondor' } },
+                    },
+                    lastModified,
+                },
+            ],
+        };
+
+        sinon
+            .stub(DynamoDbBundleService.prototype, 'transaction')
+            .returns(Promise.resolve(batchReadWriteServiceResponse));
+
+        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+
+        // OPERATE
+        const serviceResponse = await dynamoDbDataService.updateResource({
+            resourceType: 'Patient',
+            id,
+            resource: { ...resourcev1, meta: { security: { system: 'gondor' } } },
+            tenantId,
+        });
+
+        // CHECK
+        const expectedResource: any = { ...resourcev1 };
+        expectedResource.meta = {
+            versionId: vid.toString(),
+            lastUpdated: expect.stringMatching(utcTimeRegExp),
+            security: { system: 'gondor' },
+        };
+
+        expect(serviceResponse.success).toEqual(true);
+        expect(serviceResponse.message).toEqual('Resource updated');
+        expect(serviceResponse.resource).toStrictEqual(expectedResource);
+    });
+
+    each(['', 'custom-tenant']).it('SUCCESS: Update Resource with existing meta', async tenantId => {
+        // BUILD
+        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+        const resourcev1 = {
+            id,
+            vid: 1,
+            resourceType: 'Patient',
+            name: [
+                {
+                    family: 'Jameson',
+                    given: ['Matt'],
+                },
+            ],
+            meta: {
+                versionId: '1',
+                lastUpdated: 'yesterday',
+                security: { system: 'skynet' },
+                tag: [{ display: 'test' }, { display: 'test1' }],
+            },
+        };
+
+        sinon
+            .stub(DynamoDbHelper.prototype, 'getMostRecentUserReadableResource')
+            .returns(Promise.resolve({ message: 'Resource found', resource: resourcev1 }));
+
+        const vid = 2;
+        const input = { ...resourcev1, meta: { security: { system: 'gondor' } } };
+        const expectedReturnFromBundle = {
+            ...input,
+            meta: { versionId: vid.toString(), lastUpdated: new Date().toISOString(), security: { system: 'gondor' } },
+        };
+        const batchReadWriteServiceResponse: BundleResponse = {
+            success: true,
+            message: '',
+            batchReadWriteResponses: [
+                {
+                    id,
+                    vid: vid.toString(),
+                    resourceType: 'Patient',
+                    operation: 'update',
+                    resource: expectedReturnFromBundle,
                     lastModified: '2020-06-18T20:20:12.763Z',
                 },
             ],
@@ -264,16 +375,13 @@ describe('UPDATE with default and custom tenant', () => {
         const serviceResponse = await dynamoDbDataService.updateResource({
             resourceType: 'Patient',
             id,
-            resource,
+            resource: input,
             tenantId,
         });
 
         // CHECK
-        const expectedResource: any = { ...resource };
-        expectedResource.meta = {
-            versionId: vid.toString(),
-            lastUpdated: expect.stringMatching(utcTimeRegExp),
-        };
+        const expectedResource: any = { ...expectedReturnFromBundle };
+        expectedResource.meta.lastUpdated = expect.stringMatching(utcTimeRegExp);
 
         expect(serviceResponse.success).toEqual(true);
         expect(serviceResponse.message).toEqual('Resource updated');

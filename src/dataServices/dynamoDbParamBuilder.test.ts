@@ -244,9 +244,6 @@ describe('buildPutAvailableItemParam', () => {
                     gender: {
                         S: 'male',
                     },
-                    externalId: {
-                        S: id,
-                    },
                     meta: {
                         M: {
                             lastUpdated: {
@@ -328,9 +325,6 @@ describe('buildPutAvailableItemParam', () => {
                 },
                 gender: {
                     S: 'male',
-                },
-                externalId: {
-                    S: id,
                 },
                 meta: {
                     M: {
