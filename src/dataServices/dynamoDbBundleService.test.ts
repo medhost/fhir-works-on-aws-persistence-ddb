@@ -229,7 +229,7 @@ describe('atomicallyReadWriteResources', () => {
                         Update: {
                             TableName: '',
                             Key: {
-                                id: { S: 'bce8411e-c15e-448c-95dd-69155a837405' },
+                                id: { S: id },
                                 vid: { N: '1' },
                             },
                             UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
@@ -245,17 +245,24 @@ describe('atomicallyReadWriteResources', () => {
                     },
                 ],
             });
-
             expect(actualResponse).toStrictEqual({
                 message: 'Successfully committed requests to DB',
                 batchReadWriteResponses: [
                     {
-                        id: 'bce8411e-c15e-448c-95dd-69155a837405',
+                        id,
                         vid: '1',
                         operation: 'create',
                         lastModified: expect.stringMatching(utcTimeRegExp),
                         resourceType: 'Patient',
-                        resource: {},
+                        resource: {
+                            ...resource,
+                            id,
+                            meta: {
+                                lastUpdated: expect.stringMatching(utcTimeRegExp),
+                                versionId: '1',
+                                security: 'gondor',
+                            },
+                        },
                     },
                 ],
                 success: true,
@@ -431,7 +438,14 @@ describe('atomicallyReadWriteResources', () => {
                         operation: 'update',
                         lastModified: expect.stringMatching(utcTimeRegExp),
                         resourceType,
-                        resource: {},
+                        resource: {
+                            ...newResource,
+                            meta: {
+                                versionId: newVid.toString(),
+                                lastUpdated: expect.stringMatching(utcTimeRegExp),
+                                security: 'skynet',
+                            },
+                        },
                     },
                 ],
                 success: true,
