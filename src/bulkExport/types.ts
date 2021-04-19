@@ -23,6 +23,7 @@ export interface BulkExportStateMachineGlobalParameters {
     exportType: ExportType;
     transactionTime: string;
     groupId?: string;
+    tenantId?: string;
     outputFormat?: string;
     since?: string;
     type?: string;
@@ -38,6 +39,7 @@ export interface BulkExportJob {
     outputFormat: string;
     since: string;
     groupId?: string;
+    tenantId?: string;
     jobFailedMessage?: string;
     type?: string;
 }

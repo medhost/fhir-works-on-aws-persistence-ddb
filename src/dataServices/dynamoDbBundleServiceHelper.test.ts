@@ -14,62 +14,68 @@ describe('generateStagingRequests', () => {
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('CREATE for tenant "%s"', (tenantId, tableName) => {
+    ]).test('CREATE for tenant "%s"', (tenantId, expectedTableName) => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
-            [GenerateStagingRequestsFactory.getCreate(tableName).request],
-            GenerateStagingRequestsFactory.getCreate(tableName).idToVersionId,
+            [GenerateStagingRequestsFactory.getCreate(expectedTableName).request],
+            GenerateStagingRequestsFactory.getCreate(expectedTableName).idToVersionId,
             tenantId,
+        );
+        const { expectedRequest, expectedLock, expectedStagingResponse } = GenerateStagingRequestsFactory.getCreate(
+            expectedTableName,
         );
         const expectedResult: any = {
             deleteRequests: [],
-            createRequests: [GenerateStagingRequestsFactory.getCreate(tableName).expectedRequest],
+            createRequests: [expectedRequest],
             updateRequests: [],
             readRequests: [],
-            newLocks: [GenerateStagingRequestsFactory.getCreate(tableName).expectedLock],
-            newStagingResponses: [GenerateStagingRequestsFactory.getCreate(tableName).expectedStagingResponse],
+            newLocks: [expectedLock],
+            newStagingResponses: [expectedStagingResponse],
         };
-
+        expect(expectedRequest.Put.TableName.includes(tenantId)).toBeTruthy();
         expect(actualResult).toMatchObject(expectedResult);
     });
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('READ for tenant "%s"', (tenantId, tableName) => {
+    ]).test('READ for tenant "%s"', (tenantId, expectedTableName) => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
-            [GenerateStagingRequestsFactory.getRead(tableName).request],
-            GenerateStagingRequestsFactory.getRead(tableName).idToVersionId,
+            [GenerateStagingRequestsFactory.getRead(expectedTableName).request],
+            GenerateStagingRequestsFactory.getRead(expectedTableName).idToVersionId,
             tenantId,
         );
+        const { expectedRequest, expectedStagingResponse } = GenerateStagingRequestsFactory.getRead(expectedTableName);
         const expectedResult: any = {
             deleteRequests: [],
             createRequests: [],
             updateRequests: [],
-            readRequests: [GenerateStagingRequestsFactory.getRead(tableName).expectedRequest],
+            readRequests: [expectedRequest],
             newLocks: [],
-            newStagingResponses: [GenerateStagingRequestsFactory.getRead(tableName).expectedStagingResponse],
+            newStagingResponses: [expectedStagingResponse],
         };
-
+        expect(expectedRequest.Get.TableName.includes(tenantId)).toBeTruthy();
         expect(actualResult).toMatchObject(expectedResult);
     });
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('UPDATE for tenant "%s"', (tenantId, tableName) => {
+    ]).test('UPDATE for tenant "%s"', (tenantId, expectedTableName) => {
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(
-            [GenerateStagingRequestsFactory.getUpdate(tableName).request],
-            GenerateStagingRequestsFactory.getUpdate(tableName).idToVersionId,
+            [GenerateStagingRequestsFactory.getUpdate(expectedTableName).request],
+            GenerateStagingRequestsFactory.getUpdate(expectedTableName).idToVersionId,
             tenantId,
         );
-
+        const { expectedRequest, expectedLock, expectedStagingResponse } = GenerateStagingRequestsFactory.getUpdate(
+            expectedTableName,
+        );
         const expectedResult: any = {
             deleteRequests: [],
             createRequests: [],
-            updateRequests: [GenerateStagingRequestsFactory.getUpdate(tableName).expectedRequest],
+            updateRequests: [expectedRequest],
             readRequests: [],
-            newLocks: [GenerateStagingRequestsFactory.getUpdate(tableName).expectedLock],
-            newStagingResponses: [GenerateStagingRequestsFactory.getUpdate(tableName).expectedStagingResponse],
+            newLocks: [expectedLock],
+            newStagingResponses: [expectedStagingResponse],
         };
-
+        expect(expectedRequest.Put.TableName.includes(tenantId)).toBeTruthy();
         expect(actualResult).toMatchObject(expectedResult);
     });
     each(['', 'custom-tenant']).test('DELETE for tenant "%s"', tenantId => {
@@ -78,13 +84,14 @@ describe('generateStagingRequests', () => {
             GenerateStagingRequestsFactory.getDelete(tenantId).idToVersionId,
             tenantId,
         );
+        const { expectedRequest, expectedStagingResponse } = GenerateStagingRequestsFactory.getDelete(tenantId);
         const expectedResult: any = {
-            deleteRequests: [GenerateStagingRequestsFactory.getDelete(tenantId).expectedRequest],
+            deleteRequests: [expectedRequest],
             createRequests: [],
             updateRequests: [],
             readRequests: [],
             newLocks: [],
-            newStagingResponses: [GenerateStagingRequestsFactory.getDelete(tenantId).expectedStagingResponse],
+            newStagingResponses: [expectedStagingResponse],
         };
 
         expect(actualResult).toMatchObject(expectedResult);
@@ -93,36 +100,36 @@ describe('generateStagingRequests', () => {
     each([
         ['', ''],
         ['custom-tenant', '-custom-tenant'],
-    ]).test('CRUD for tenant "%s"', (tenantId, tableName) => {
+    ]).test('CRUD for tenant "%s"', (tenantId, expectedTableName) => {
         let idToVersionId: Record<string, number> = {};
         idToVersionId = {
-            ...GenerateStagingRequestsFactory.getRead(tableName).idToVersionId,
-            ...GenerateStagingRequestsFactory.getUpdate(tableName).idToVersionId,
-            ...GenerateStagingRequestsFactory.getDelete(tenantId).idToVersionId,
+            ...GenerateStagingRequestsFactory.getRead(expectedTableName).idToVersionId,
+            ...GenerateStagingRequestsFactory.getUpdate(expectedTableName).idToVersionId,
+            ...GenerateStagingRequestsFactory.getDelete(expectedTableName).idToVersionId,
         };
 
         const requests: BatchReadWriteRequest[] = [
-            GenerateStagingRequestsFactory.getCreate(tableName).request,
-            GenerateStagingRequestsFactory.getRead(tableName).request,
-            GenerateStagingRequestsFactory.getUpdate(tableName).request,
-            GenerateStagingRequestsFactory.getDelete(tenantId).request,
+            GenerateStagingRequestsFactory.getCreate(expectedTableName).request,
+            GenerateStagingRequestsFactory.getRead(expectedTableName).request,
+            GenerateStagingRequestsFactory.getUpdate(expectedTableName).request,
+            GenerateStagingRequestsFactory.getDelete(expectedTableName).request,
         ];
         const actualResult = DynamoDbBundleServiceHelper.generateStagingRequests(requests, idToVersionId, tenantId);
 
         const expectedResult = {
-            createRequests: [GenerateStagingRequestsFactory.getCreate(tableName).expectedRequest],
-            readRequests: [GenerateStagingRequestsFactory.getRead(tableName).expectedRequest],
-            updateRequests: [GenerateStagingRequestsFactory.getUpdate(tableName).expectedRequest],
+            createRequests: [GenerateStagingRequestsFactory.getCreate(expectedTableName).expectedRequest],
+            readRequests: [GenerateStagingRequestsFactory.getRead(expectedTableName).expectedRequest],
+            updateRequests: [GenerateStagingRequestsFactory.getUpdate(expectedTableName).expectedRequest],
             deleteRequests: [GenerateStagingRequestsFactory.getDelete(tenantId).expectedRequest],
             newLocks: [
-                GenerateStagingRequestsFactory.getCreate(tableName).expectedLock,
-                GenerateStagingRequestsFactory.getUpdate(tableName).expectedLock,
+                GenerateStagingRequestsFactory.getCreate(expectedTableName).expectedLock,
+                GenerateStagingRequestsFactory.getUpdate(expectedTableName).expectedLock,
             ],
             newStagingResponses: [
-                GenerateStagingRequestsFactory.getCreate(tableName).expectedStagingResponse,
-                GenerateStagingRequestsFactory.getRead(tableName).expectedStagingResponse,
-                GenerateStagingRequestsFactory.getUpdate(tableName).expectedStagingResponse,
-                GenerateStagingRequestsFactory.getDelete(tenantId).expectedStagingResponse,
+                GenerateStagingRequestsFactory.getCreate(expectedTableName).expectedStagingResponse,
+                GenerateStagingRequestsFactory.getRead(expectedTableName).expectedStagingResponse,
+                GenerateStagingRequestsFactory.getUpdate(expectedTableName).expectedStagingResponse,
+                GenerateStagingRequestsFactory.getDelete(expectedTableName).expectedStagingResponse,
             ],
         };
 

@@ -4,7 +4,7 @@
  */
 
 import { Handler } from 'aws-lambda';
-import AWS from 'aws-sdk';
+import AWS from '../AWS';
 import { BulkExportStateMachineGlobalParameters } from './types';
 
 export const startExportJobHandler: Handler<
@@ -25,6 +25,7 @@ export const startExportJobHandler: Handler<
                 '--exportType': event.exportType,
                 '--transactionTime': event.transactionTime,
                 '--groupId': event.groupId!,
+                '--tenantId': event.tenantId!,
                 '--since': event.since!,
                 '--type': event.type!,
                 '--outputFormat': event.outputFormat!,

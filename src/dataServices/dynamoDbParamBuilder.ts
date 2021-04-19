@@ -4,12 +4,7 @@
  */
 
 import { ExportJobStatus } from 'fhir-works-on-aws-interface';
-import {
-    DynamoDBConverter,
-    RESOURCE_TABLE,
-    EXPORT_REQUEST_TABLE,
-    EXPORT_REQUEST_TABLE_JOB_STATUS_INDEX,
-} from './dynamoDb';
+import { DynamoDBConverter, EXPORT_REQUEST_TABLE, EXPORT_REQUEST_TABLE_JOB_STATUS_INDEX } from './dynamoDb';
 import { DynamoDbUtil, DOCUMENT_STATUS_FIELD, LOCK_END_TS_FIELD } from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
 import { BulkExportJob } from '../bulkExport/types';
@@ -33,7 +28,7 @@ export default class DynamoDbParamBuilder {
 
         const params: any = {
             Update: {
-                TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                TableName: DynamoDbUtil.getTableName(tenantId),
                 Key: DynamoDBConverter.marshall({
                     id,
                     vid,
@@ -73,7 +68,7 @@ export default class DynamoDbParamBuilder {
         projectionExpression?: string,
     ) {
         const params: any = {
-            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+            TableName: DynamoDbUtil.getTableName(tenantId),
             ScanIndexForward: false,
             Limit: maxNumberOfVersions,
             FilterExpression: '#r = :resourceType',
@@ -95,7 +90,7 @@ export default class DynamoDbParamBuilder {
     static buildDeleteParam(id: string, vid: number, tenantId: string) {
         const params: any = {
             Delete: {
-                TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+                TableName: DynamoDbUtil.getTableName(tenantId),
                 Key: DynamoDBConverter.marshall({
                     id,
                     vid,
@@ -108,7 +103,7 @@ export default class DynamoDbParamBuilder {
 
     static buildGetItemParam(id: string, vid: number, tenantId: string) {
         return {
-            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+            TableName: DynamoDbUtil.getTableName(tenantId),
             Key: DynamoDBConverter.marshall({
                 id,
                 vid,
@@ -131,7 +126,7 @@ export default class DynamoDbParamBuilder {
     ) {
         const newItem = DynamoDbUtil.prepItemForDdbInsert(item, id, vid, DOCUMENT_STATUS.AVAILABLE);
         const param: any = {
-            TableName: tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE,
+            TableName: DynamoDbUtil.getTableName(tenantId),
             Item: DynamoDBConverter.marshall(newItem),
         };
 
