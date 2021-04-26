@@ -48,7 +48,13 @@ export default class DynamoDbBundleServiceHelper {
                         id = request.id;
                     }
                     const vid = 1;
-                    const Item = DynamoDbUtil.prepItemForDdbInsert(request.resource, id, vid, DOCUMENT_STATUS.PENDING);
+                    const Item = DynamoDbUtil.prepItemForDdbInsert(
+                        request.resource,
+                        id,
+                        vid,
+                        DOCUMENT_STATUS.PENDING,
+                        tenantId,
+                    );
 
                     createRequests.push({
                         Put: {
@@ -70,7 +76,13 @@ export default class DynamoDbBundleServiceHelper {
                     // When updating a resource, create a new Document for that resource
                     const { id } = request.resource;
                     const vid = (idToVersionId[id] || 0) + 1;
-                    const Item = DynamoDbUtil.prepItemForDdbInsert(request.resource, id, vid, DOCUMENT_STATUS.PENDING);
+                    const Item = DynamoDbUtil.prepItemForDdbInsert(
+                        request.resource,
+                        id,
+                        vid,
+                        DOCUMENT_STATUS.PENDING,
+                        tenantId,
+                    );
 
                     updateRequests.push({
                         Put: {

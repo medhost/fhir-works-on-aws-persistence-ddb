@@ -65,6 +65,10 @@ export default class DdbToEsHelper {
                                     type: 'keyword',
                                     index: true,
                                 },
+                                tenantId: {
+                                    type: 'keyword',
+                                    index: true,
+                                },
                             },
                         },
                     },
