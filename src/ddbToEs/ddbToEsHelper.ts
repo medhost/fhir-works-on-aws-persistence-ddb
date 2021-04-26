@@ -87,12 +87,14 @@ export default class DdbToEsHelper {
 
     // Getting promise params for actual deletion of the record from ES
     // eslint-disable-next-line class-methods-use-this
-    getDeleteRecordPromiseParam(image: any, indexName: string): PromiseParamAndId {
+    getDeleteRecordPromiseParam(image: any): PromiseParamAndId {
+        const lowercaseResourceType = image.resourceType.toLowerCase();
+
         const { id, vid } = image;
         const compositeId = this.generateFullId(id, vid);
         return {
             promiseParam: {
-                index: indexName,
+                index: lowercaseResourceType,
                 id: compositeId,
             },
             id: compositeId,
@@ -102,7 +104,9 @@ export default class DdbToEsHelper {
 
     // Getting promise params for inserting a new record or editing a record
     // eslint-disable-next-line class-methods-use-this
-    getUpsertRecordPromiseParam(newImage: any, indexName: string): PromiseParamAndId | null {
+    getUpsertRecordPromiseParam(newImage: any): PromiseParamAndId | null {
+        const lowercaseResourceType = newImage.resourceType.toLowerCase();
+
         // We only perform operations on records with documentStatus === AVAILABLE || DELETED
         if (
             newImage[DOCUMENT_STATUS_FIELD] !== DOCUMENT_STATUS.AVAILABLE &&
@@ -120,7 +124,7 @@ export default class DdbToEsHelper {
         return {
             id: compositeId,
             promiseParam: {
-                index: indexName,
+                index: lowercaseResourceType,
                 id: compositeId,
                 body: {
                     doc: newImage,
