@@ -16,6 +16,7 @@ import {
     ResourceNotFoundError,
     ResourceVersionNotFoundError,
 } from 'fhir-works-on-aws-interface';
+import each from 'jest-each';
 import validV4PdfBinary from '../../sampleData/validV4PdfBinary.json';
 import validV4JpegBinary from '../../sampleData/validV4JpegBinary.json';
 import validV3JpegBinary from '../../sampleData/validV3JpegBinary.json';
@@ -51,10 +52,14 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
 
     const s3DataService = new S3DataService(DynamoDbDataService, '4.0.1');
 
-    test('create', async () => {
+    each(['', 'custom-tenant']).it('create', async tenantId => {
         // BUILD
         // OPERATE
-        const response = await s3DataService.createResource({ resourceType: 'Binary', resource: validV4PdfBinary });
+        const response = await s3DataService.createResource({
+            resourceType: 'Binary',
+            resource: validV4PdfBinary,
+            tenantId,
+        });
         // CHECK
         expect(response).toMatchObject({
             success: true,
@@ -72,12 +77,12 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
         expect(response.resource.meta).toBeDefined();
     });
 
-    test('read', async () => {
+    each(['', 'custom-tenant']).it('read', async tenantId => {
         // BUILD
         const id = 'id';
 
         // OPERATE
-        const readResponse = await s3DataService.readResource({ resourceType: 'Binary', id });
+        const readResponse = await s3DataService.readResource({ resourceType: 'Binary', id, tenantId });
 
         // CHECK
         expect(readResponse).toMatchObject({
@@ -95,7 +100,7 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
         expect(readResponse.resource.meta).toBeDefined();
     });
 
-    test('update', async () => {
+    each(['', 'custom-tenant']).it('update', async tenantId => {
         // BUILD
         const id = 'id';
 
@@ -104,6 +109,7 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
             resourceType: 'Binary',
             id,
             resource: validV4JpegBinary,
+            tenantId,
         });
 
         // CHECK
@@ -123,12 +129,16 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
         expect(updateResponse.resource.meta).toBeDefined();
     });
 
-    test('delete', async () => {
+    each(['', 'custom-tenant']).it('delete', async tenantId => {
         // BUILD
         const id = 'id';
 
         // OPERATE
-        const deleteResponse: GenericResponse = await s3DataService.deleteResource({ resourceType: 'Binary', id });
+        const deleteResponse: GenericResponse = await s3DataService.deleteResource({
+            resourceType: 'Binary',
+            id,
+            tenantId,
+        });
         expect(deleteResponse).toMatchObject({
             success: true,
             message: 'Resource deleted',
@@ -168,7 +178,11 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
     test('create', async () => {
         // BUILD
         // OPERATE
-        const response = await s3DataService.createResource({ resourceType: 'Binary', resource: validV3JpegBinary });
+        const response = await s3DataService.createResource({
+            resourceType: 'Binary',
+            resource: validV3JpegBinary,
+            tenantId: '',
+        });
 
         // CHECK
         expect(response).toMatchObject({
@@ -196,6 +210,7 @@ describe('SUCCESS CASES: Testing create, read, update, delete of resources; vers
             resourceType: 'Binary',
             id,
             resource: validV4JpegBinary,
+            tenantId: '',
         });
 
         // CHECK
@@ -234,7 +249,7 @@ describe('ERROR CASES: Testing create, read, update, delete of resources', () =>
 
         try {
             // OPERATE
-            await s3DataService.readResource({ resourceType: 'Binary', id });
+            await s3DataService.readResource({ resourceType: 'Binary', id, tenantId: '' });
         } catch (e) {
             // CHECK
             expect(e).toEqual(new ResourceNotFoundError('Binary', id));
@@ -250,7 +265,7 @@ describe('ERROR CASES: Testing create, read, update, delete of resources', () =>
 
         try {
             // OPERATE
-            await s3DataService.vReadResource({ resourceType: 'Binary', id, vid: '1' });
+            await s3DataService.vReadResource({ resourceType: 'Binary', id, vid: '1', tenantId: '' });
         } catch (e) {
             // CHECK
             expect(e).toMatchObject(new ResourceVersionNotFoundError('Binary', id, '1'));
@@ -268,6 +283,7 @@ describe('ERROR CASES: Testing create, read, update, delete of resources', () =>
                 resourceType: 'Binary',
                 id,
                 resource: validV4PdfBinary,
+                tenantId: '',
             });
         } catch (e) {
             // CHECK
@@ -286,6 +302,7 @@ describe('ERROR CASES: Testing create, read, update, delete of resources', () =>
                 resourceType: 'Binary',
                 id,
                 resource: validV4PdfBinary,
+                tenantId: '',
             });
         } catch (e) {
             // CHECK
@@ -300,7 +317,7 @@ describe('ERROR CASES: Testing create, read, update, delete of resources', () =>
 
         try {
             // OPERATE
-            await s3DataService.deleteResource({ resourceType: 'Binary', id });
+            await s3DataService.deleteResource({ resourceType: 'Binary', id, tenantId: '' });
         } catch (e) {
             // CHECK
             expect(e).toMatchObject(new ResourceNotFoundError('Binary', id));
@@ -317,7 +334,7 @@ describe('ERROR CASES: Testing create, read, update, delete of resources', () =>
 
         try {
             // OPERATE
-            const deleteResponse = await s3DataService.deleteResource({ resourceType: 'Binary', id });
+            const deleteResponse = await s3DataService.deleteResource({ resourceType: 'Binary', id, tenantId: '' });
         } catch (e) {
             // CHECK
             expect(e).toMatchObject(new Error('Failed to delete'));

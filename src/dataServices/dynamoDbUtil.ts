@@ -7,11 +7,14 @@ import { clone, generateMeta } from 'fhir-works-on-aws-interface';
 import flatten from 'flat';
 import { SEPARATOR } from '../constants';
 import DOCUMENT_STATUS from './documentStatus';
+import { RESOURCE_TABLE } from './dynamoDb';
 
 export const DOCUMENT_STATUS_FIELD = 'documentStatus';
 export const LOCK_END_TS_FIELD = 'lockEndTs';
 export const VID_FIELD = 'vid';
 export const REFERENCES_FIELD = '_references';
+export const EXTERNAL_ID_FIELD = 'id';
+export const TENANT_ID = 'tenantId';
 
 export class DynamoDbUtil {
     static cleanItem(item: any) {
@@ -21,6 +24,7 @@ export class DynamoDbUtil {
         delete cleanedItem[LOCK_END_TS_FIELD];
         delete cleanedItem[VID_FIELD];
         delete cleanedItem[REFERENCES_FIELD];
+        delete cleanedItem[TENANT_ID];
 
         // Return id instead of full id (this is only a concern in results from ES)
         const id = item.id.split(SEPARATOR)[0];
@@ -29,7 +33,13 @@ export class DynamoDbUtil {
         return cleanedItem;
     }
 
-    static prepItemForDdbInsert(resource: any, id: string, vid: number, documentStatus: DOCUMENT_STATUS) {
+    static prepItemForDdbInsert(
+        resource: any,
+        id: string,
+        vid: number,
+        documentStatus: DOCUMENT_STATUS,
+        tenantId: string,
+    ) {
         const item = clone(resource);
         item.id = id;
         item.vid = vid;
@@ -44,6 +54,7 @@ export class DynamoDbUtil {
 
         item[DOCUMENT_STATUS_FIELD] = documentStatus;
         item[LOCK_END_TS_FIELD] = Date.now();
+        item[TENANT_ID] = tenantId;
 
         // Format of flattenedResource
         // https://www.npmjs.com/package/flat
@@ -58,5 +69,9 @@ export class DynamoDbUtil {
             });
         item[REFERENCES_FIELD] = references;
         return item;
+    }
+
+    static getTableName(tenantId: string = ''): string {
+        return tenantId ? `${RESOURCE_TABLE}-${tenantId}` : RESOURCE_TABLE;
     }
 }

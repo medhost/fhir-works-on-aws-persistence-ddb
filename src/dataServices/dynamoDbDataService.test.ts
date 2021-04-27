@@ -43,7 +43,7 @@ afterEach(() => {
     AWSMock.restore();
 });
 
-describe('CREATE', () => {
+describe('CREATE with default and custom tenant', () => {
     afterEach(() => {
         AWSMock.restore();
     });
@@ -60,7 +60,7 @@ describe('CREATE', () => {
             },
         ],
     };
-    test('SUCCESS: Create Resource without meta', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Create Resource without meta', async tenantId => {
         // READ items (Success)
         AWSMock.mock('DynamoDB', 'putItem', (params: PutItemInput, callback: Function) => {
             callback(null, 'success');
@@ -69,7 +69,7 @@ describe('CREATE', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.createResource({ resource, resourceType });
+        const serviceResponse = await dynamoDbDataService.createResource({ resource, resourceType, tenantId });
 
         // CHECK
         const expectedResource: any = { ...resource };
@@ -84,7 +84,7 @@ describe('CREATE', () => {
         expect(serviceResponse.message).toEqual('Resource created');
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
-    test('SUCCESS: Create Resource with meta', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Create Resource with meta', async tenantId => {
         const resourceWithMeta = {
             ...resource,
             meta: {
@@ -102,7 +102,7 @@ describe('CREATE', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.createResource({ resource: resourceWithMeta, resourceType });
+        const serviceResponse = await dynamoDbDataService.createResource({ resource: resourceWithMeta, resourceType,  tenantId });
 
         // CHECK
         const expectedResource: any = { ...resourceWithMeta };
@@ -117,22 +117,21 @@ describe('CREATE', () => {
         expect(serviceResponse.message).toEqual('Resource created');
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
-    test('FAILED: Resource with Id already exists', async () => {
+    each(['', 'custom-tenant']).it('FAILED: Resource with Id already exists', async tenantId => {
         // READ items (Success)
         AWSMock.mock('DynamoDB', 'putItem', (params: PutItemInput, callback: Function) => {
             callback(new ConditionalCheckFailedExceptionMock(), {});
         });
 
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
-
         // OPERATE, CHECK
-        await expect(dynamoDbDataService.createResource({ resource, resourceType })).rejects.toThrowError(
+        await expect(dynamoDbDataService.createResource({ resource, resourceType, tenantId })).rejects.toThrowError(
             new InvalidResourceError('Resource creation failed, id matches an existing resource'),
         );
     });
 });
 
-describe('READ', () => {
+describe('READ with default and custom tenant', () => {
     // beforeEach(() => {
     //     // Ensures that for each test, we test the assertions in the catch block
     //     expect.hasAssertions();
@@ -141,7 +140,7 @@ describe('READ', () => {
         AWSMock.restore();
         sinon.restore();
     });
-    test('SUCCESS: Get Resource', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Get Resource', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const resourceType = 'Patient';
@@ -161,16 +160,15 @@ describe('READ', () => {
             .stub(DynamoDbHelper.prototype, 'getMostRecentUserReadableResource')
             .returns(Promise.resolve({ message: 'Resource found', resource }));
 
-        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
-
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.readResource({ resourceType, id });
+        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+        const serviceResponse = await dynamoDbDataService.readResource({ resourceType, id, tenantId });
 
         // CHECK
         expect(serviceResponse.message).toEqual('Resource found');
         expect(serviceResponse.resource).toStrictEqual(resource);
     });
-    test('SUCCESS: Get Versioned Resource', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Get Versioned Resource', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = '5';
@@ -199,7 +197,7 @@ describe('READ', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB({ apiVersion: '2012-08-10' }));
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.vReadResource({ resourceType, id, vid });
+        const serviceResponse = await dynamoDbDataService.vReadResource({ resourceType, id, vid, tenantId });
 
         // CHECK
         expect(serviceResponse.message).toEqual('Resource found');
@@ -209,7 +207,7 @@ describe('READ', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('ERROR: Get Versioned Resource: Unable to find resource', async () => {
+    each(['', 'custom-tenant']).it('ERROR: Get Versioned Resource: Unable to find resource', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = '5';
@@ -223,36 +221,39 @@ describe('READ', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
         // OPERATE, CHECK
-        await expect(dynamoDbDataService.vReadResource({ resourceType, id, vid })).rejects.toThrowError(
+        await expect(dynamoDbDataService.vReadResource({ resourceType, id, vid, tenantId })).rejects.toThrowError(
             new ResourceVersionNotFoundError(resourceType, id, vid),
         );
     });
 
-    test('ERROR: Get Versioned Resource: resourceType of request does not match resourceType retrieved', async () => {
-        // BUILD
-        const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
-        const vid = '5';
-        const resourceType = 'Patient';
+    each(['', 'custom-tenant']).it(
+        'ERROR: Get Versioned Resource: resourceType of request does not match resourceType retrieved',
+        async tenantId => {
+            // BUILD
+            const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
+            const vid = '5';
+            const resourceType = 'Patient';
 
-        // READ items (Success)
-        AWSMock.mock('DynamoDB', 'getItem', (params: GetItemInput, callback: Function) => {
-            callback(null, { Item: DynamoDBConverter.marshall({ id, vid, resourceType: 'Observation' }) });
-        });
+            // READ items (Success)
+            AWSMock.mock('DynamoDB', 'getItem', (params: GetItemInput, callback: Function) => {
+                callback(null, { Item: DynamoDBConverter.marshall({ id, vid, resourceType: 'Observation' }) });
+            });
 
-        const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
-        await expect(dynamoDbDataService.vReadResource({ resourceType, id, vid })).rejects.toThrowError(
-            new ResourceVersionNotFoundError(resourceType, id, vid),
-        );
-    });
+            const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
+            await expect(dynamoDbDataService.vReadResource({ id, vid, resourceType, tenantId })).rejects.toThrowError(
+                new ResourceVersionNotFoundError(resourceType, id, vid),
+            );
+        },
+    );
 });
 
-describe('UPDATE', () => {
+describe('UPDATE with default and custom tenant', () => {
     afterEach(() => {
         AWSMock.restore();
         sinon.restore();
     });
 
-    test('SUCCESS: Update Resource without existing metadata', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Update Resource without existing metadata', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const resourcev1 = {
@@ -302,6 +303,7 @@ describe('UPDATE', () => {
             resourceType: 'Patient',
             id,
             resource: { ...resourcev1, meta: { security: { system: 'gondor' } } },
+            tenantId,
         });
 
         // CHECK
@@ -317,7 +319,7 @@ describe('UPDATE', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('SUCCESS: Update Resource with existing meta', async () => {
+    each(['', 'custom-tenant']).it('SUCCESS: Update Resource with existing meta', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const resourcev1 = {
@@ -374,6 +376,7 @@ describe('UPDATE', () => {
             resourceType: 'Patient',
             id,
             resource: input,
+            tenantId,
         });
 
         // CHECK
@@ -385,7 +388,7 @@ describe('UPDATE', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('ERROR: Update Resource not present in DynamoDB', async () => {
+    each(['', 'custom-tenant']).test('ERROR: Update Resource not present in DynamoDB', async tenantId => {
         // BUILD
         const id = 'd3847e9f-a551-47b0-b8d9-fcb7d324bc2b';
         const resource = {
@@ -406,7 +409,7 @@ describe('UPDATE', () => {
 
         // OPERATE
         try {
-            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource, tenantId });
         } catch (e) {
             // CHECK
             expect(isResourceNotFoundError(e)).toEqual(true);
@@ -414,7 +417,7 @@ describe('UPDATE', () => {
         }
     });
 
-    test('SUCCESS: Update Resource as Create', async () => {
+    each(['', 'custom-tenant']).test('SUCCESS: Update Resource as Create', async tenantId => {
         // BUILD
         const id = 'e264efb1-147e-43ac-92ea-a050bc236ff3';
         const resourceType = 'Patient';
@@ -436,7 +439,12 @@ describe('UPDATE', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB(), true);
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+        const serviceResponse = await dynamoDbDataService.updateResource({
+            resourceType: 'Patient',
+            id,
+            resource,
+            tenantId,
+        });
 
         // CHECK
         const expectedResource: any = { ...resource };
@@ -451,7 +459,7 @@ describe('UPDATE', () => {
         expect(serviceResponse.resource).toStrictEqual(expectedResource);
     });
 
-    test('ERROR: Id supplied for Update as Create is not valid', async () => {
+    each(['', 'custom-tenant']).test('ERROR: Id supplied for Update as Create is not valid', async tenantId => {
         // BUILD
         const id = 'uuid:$deadbeef';
         const resourceType = 'Patient';
@@ -470,7 +478,7 @@ describe('UPDATE', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB(), true);
         // OPERATE
         try {
-            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource });
+            await dynamoDbDataService.updateResource({ resourceType: 'Patient', id, resource, tenantId });
         } catch (e) {
             // CHECK
             expect(isInvalidResourceError(e)).toEqual(true);
@@ -479,13 +487,13 @@ describe('UPDATE', () => {
     });
 });
 
-describe('DELETE', () => {
+describe('DELETE with default and custom tenant', () => {
     afterEach(() => {
         AWSMock.restore();
         sinon.restore();
     });
 
-    test('Successfully delete resource', async () => {
+    each(['', 'custom-tenant']).it('Successfully delete resource', async tenantId => {
         // BUILD
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const resourceType = 'Patient';
@@ -524,7 +532,7 @@ describe('DELETE', () => {
         const dynamoDbDataService = new DynamoDbDataService(new AWS.DynamoDB());
 
         // OPERATE
-        const serviceResponse = await dynamoDbDataService.deleteResource({ resourceType, id });
+        const serviceResponse = await dynamoDbDataService.deleteResource({ resourceType, id, tenantId });
 
         // CHECK
         expect(serviceResponse.success).toEqual(true);
@@ -556,6 +564,7 @@ describe('initiateExport', () => {
         since: '2020-08-01T12:00:00Z',
         type: 'Patient',
         groupId: '1',
+        tenantId: 'custom-tenant',
     };
 
     test('Successful initiate export request', async () => {
@@ -723,6 +732,7 @@ describe('getExportStatus', () => {
                     jobStatus: 'in-progress',
                     stepFunctionExecutionArn: '',
                     type: 'Patient',
+                    tenantId: '',
                 }),
             });
         });
@@ -744,6 +754,7 @@ describe('getExportStatus', () => {
             groupId: '',
             errorArray: [],
             errorMessage: '',
+            tenantId: '',
         });
     });
 });

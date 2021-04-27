@@ -13,7 +13,14 @@ import { DynamoDbBundleService } from './dynamoDbBundleService';
 import { DynamoDBConverter } from './dynamoDb';
 import { timeFromEpochInMsRegExp, utcTimeRegExp, uuidRegExp } from '../../testUtilities/regExpressions';
 import DynamoDbHelper from './dynamoDbHelper';
-import { DOCUMENT_STATUS_FIELD, LOCK_END_TS_FIELD, REFERENCES_FIELD, VID_FIELD } from './dynamoDbUtil';
+import {
+    DOCUMENT_STATUS_FIELD,
+    EXTERNAL_ID_FIELD,
+    LOCK_END_TS_FIELD,
+    REFERENCES_FIELD,
+    TENANT_ID,
+    VID_FIELD,
+} from './dynamoDbUtil';
 // eslint-disable-next-line import/order
 import sinon = require('sinon');
 
@@ -40,6 +47,7 @@ describe('atomicallyReadWriteResources', () => {
             const actualResponse = await bundleService.transaction({
                 requests: [deleteRequest],
                 startTime: new Date(),
+                tenantId: '',
             });
 
             expect(actualResponse).toStrictEqual(expectedResponse);
@@ -154,7 +162,6 @@ describe('atomicallyReadWriteResources', () => {
                     },
                 ],
                 gender: 'male',
-                meta: { security: 'gondor' },
             };
 
             const organization = 'Organization/1';
@@ -175,6 +182,7 @@ describe('atomicallyReadWriteResources', () => {
             const actualResponse = await transactionService.transaction({
                 requests: [createRequest],
                 startTime: new Date(),
+                tenantId: '',
             });
 
             // CHECK
@@ -187,20 +195,22 @@ describe('atomicallyReadWriteResources', () => {
                 meta: {
                     lastUpdated: 'holder',
                     versionId: '1',
-                    security: 'gondor',
                 },
             };
             insertedResourceJson[DOCUMENT_STATUS_FIELD] = 'PENDING';
             insertedResourceJson[VID_FIELD] = 1;
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
+            insertedResourceJson[TENANT_ID] = '';
 
             const insertedResource = DynamoDBConverter.marshall(insertedResourceJson);
 
             // Setting up test assertions
             insertedResource.id.S = expect.stringMatching(uuidRegExp);
             insertedResource[LOCK_END_TS_FIELD].N = expect.stringMatching(timeFromEpochInMsRegExp);
-            insertedResource.meta!.M!.lastUpdated.S = expect.stringMatching(utcTimeRegExp);
+            if (insertedResource.meta.M) {
+                insertedResource.meta.M.lastUpdated.S = expect.stringMatching(utcTimeRegExp);
+            }
 
             // 1. create new Patient record with documentStatus of 'PENDING'
             expect(transactWriteItemSpy.getCall(0).args[0]).toStrictEqual({
@@ -229,7 +239,9 @@ describe('atomicallyReadWriteResources', () => {
                             ExpressionAttributeValues: {
                                 ':newStatus': { S: 'AVAILABLE' },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
-                                ':resourceType': { S: 'Patient' },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
@@ -250,7 +262,6 @@ describe('atomicallyReadWriteResources', () => {
                             meta: {
                                 lastUpdated: expect.stringMatching(utcTimeRegExp),
                                 versionId: '1',
-                                security: 'gondor',
                             },
                         },
                     },
@@ -294,11 +305,7 @@ describe('atomicallyReadWriteResources', () => {
                     reference: organization,
                 };
             }
-            const newResource = {
-                ...oldResource,
-                test: 'test',
-                meta: { versionId: newVid.toString(), lastUpdated: new Date().toISOString(), security: 'skynet' },
-            };
+            const newResource = { ...oldResource, test: 'test' };
 
             sinon
                 .stub(DynamoDbHelper.prototype, 'getMostRecentResource')
@@ -318,6 +325,7 @@ describe('atomicallyReadWriteResources', () => {
             const actualResponse = await transactionService.transaction({
                 requests: [updateRequest],
                 startTime: new Date(),
+                tenantId: '',
             });
 
             // CHECK
@@ -345,7 +353,9 @@ describe('atomicallyReadWriteResources', () => {
                                 ':pendingStatus': { S: 'PENDING' },
                                 ':currentTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
                                 ':futureEndTs': { N: expect.stringMatching(timeFromEpochInMsRegExp) },
-                                ':resourceType': { S: 'Patient' },
+                                ':resourceType': {
+                                    S: 'Patient',
+                                },
                             },
                         },
                     },
@@ -357,6 +367,8 @@ describe('atomicallyReadWriteResources', () => {
             };
             insertedResourceJson[DOCUMENT_STATUS_FIELD] = 'PENDING';
             insertedResourceJson[VID_FIELD] = newVid;
+            insertedResourceJson[EXTERNAL_ID_FIELD] = id;
+            insertedResourceJson[TENANT_ID] = '';
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
 
@@ -433,7 +445,6 @@ describe('atomicallyReadWriteResources', () => {
                             meta: {
                                 versionId: newVid.toString(),
                                 lastUpdated: expect.stringMatching(utcTimeRegExp),
-                                security: 'skynet',
                             },
                         },
                     },

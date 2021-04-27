@@ -21,12 +21,14 @@ export default class DynamoDbHelper {
         resourceType: string,
         id: string,
         maxNumberOfVersionsToGet: number,
+        tenantId: string,
         projectionExpression?: string,
     ): Promise<ItemList> {
         const params = DynamoDbParamBuilder.buildGetResourcesQueryParam(
             id,
             resourceType,
             maxNumberOfVersionsToGet,
+            tenantId,
             projectionExpression,
         );
         let result: any = {};
@@ -51,9 +53,10 @@ export default class DynamoDbHelper {
     async getMostRecentResource(
         resourceType: string,
         id: string,
+        tenantId: string,
         projectionExpression?: string,
     ): Promise<GenericResponse> {
-        let item = (await this.getMostRecentResources(resourceType, id, 1, projectionExpression))[0];
+        let item = (await this.getMostRecentResources(resourceType, id, 1, tenantId, projectionExpression))[0];
         item = DynamoDbUtil.cleanItem(item);
 
         return {
@@ -65,8 +68,12 @@ export default class DynamoDbHelper {
     /**
      * @return The most recent resource that has not been deleted and has been committed to the database (i.e. The resource is not in a transitional state)
      */
-    async getMostRecentUserReadableResource(resourceType: string, id: string): Promise<GenericResponse> {
-        const items = await this.getMostRecentResources(resourceType, id, 2);
+    async getMostRecentUserReadableResource(
+        resourceType: string,
+        id: string,
+        tenantId: string,
+    ): Promise<GenericResponse> {
+        const items = await this.getMostRecentResources(resourceType, id, 2, tenantId);
         const latestItemDocStatus: DOCUMENT_STATUS = <DOCUMENT_STATUS>items[0][DOCUMENT_STATUS_FIELD];
         if (latestItemDocStatus === DOCUMENT_STATUS.DELETED) {
             throw new ResourceNotFoundError(resourceType, id);

@@ -12,7 +12,7 @@ import {
 } from 'fhir-works-on-aws-interface';
 import { DynamoDbUtil } from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
-import { DynamoDBConverter, RESOURCE_TABLE } from './dynamoDb';
+import { DynamoDBConverter } from './dynamoDb';
 import DynamoDbParamBuilder from './dynamoDbParamBuilder';
 
 export interface ItemRequest {
@@ -24,7 +24,11 @@ export interface ItemRequest {
 }
 
 export default class DynamoDbBundleServiceHelper {
-    static generateStagingRequests(requests: BatchReadWriteRequest[], idToVersionId: Record<string, number>) {
+    static generateStagingRequests(
+        requests: BatchReadWriteRequest[],
+        idToVersionId: Record<string, number>,
+        tenantId: string,
+    ) {
         const deleteRequests: any = [];
         const createRequests: any = [];
         const updateRequests: any = [];
@@ -32,6 +36,8 @@ export default class DynamoDbBundleServiceHelper {
 
         let newLocks: ItemRequest[] = [];
         let newBundleEntryResponses: BatchReadWriteResponse[] = [];
+
+        const tableName: string = DynamoDbUtil.getTableName(tenantId);
 
         requests.forEach(request => {
             switch (request.operation) {
@@ -42,11 +48,17 @@ export default class DynamoDbBundleServiceHelper {
                         id = request.id;
                     }
                     const vid = 1;
-                    const Item = DynamoDbUtil.prepItemForDdbInsert(request.resource, id, vid, DOCUMENT_STATUS.PENDING);
+                    const Item = DynamoDbUtil.prepItemForDdbInsert(
+                        request.resource,
+                        id,
+                        vid,
+                        DOCUMENT_STATUS.PENDING,
+                        tenantId,
+                    );
 
                     createRequests.push({
                         Put: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tableName,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -64,11 +76,17 @@ export default class DynamoDbBundleServiceHelper {
                     // When updating a resource, create a new Document for that resource
                     const { id } = request.resource;
                     const vid = (idToVersionId[id] || 0) + 1;
-                    const Item = DynamoDbUtil.prepItemForDdbInsert(request.resource, id, vid, DOCUMENT_STATUS.PENDING);
+                    const Item = DynamoDbUtil.prepItemForDdbInsert(
+                        request.resource,
+                        id,
+                        vid,
+                        DOCUMENT_STATUS.PENDING,
+                        tenantId,
+                    );
 
                     updateRequests.push({
                         Put: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tableName,
                             Item: DynamoDBConverter.marshall(Item),
                         },
                     });
@@ -92,6 +110,7 @@ export default class DynamoDbBundleServiceHelper {
                             id,
                             vid,
                             resourceType,
+                            tenantId,
                         ),
                     );
                     newBundleEntryResponses.push({
@@ -110,7 +129,7 @@ export default class DynamoDbBundleServiceHelper {
                     const vid = idToVersionId[id];
                     readRequests.push({
                         Get: {
-                            TableName: RESOURCE_TABLE,
+                            TableName: tableName,
                             Key: DynamoDBConverter.marshall({
                                 id,
                                 vid,
@@ -178,7 +197,7 @@ export default class DynamoDbBundleServiceHelper {
     }
 
     private static generateDeleteLatestRecordAndItemToRemoveFromLock(resourceType: string, id: string, vid: string) {
-        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10));
+        const transactionRequest = DynamoDbParamBuilder.buildDeleteParam(id, parseInt(vid, 10), ''); // TODO add tenantID support for bundle requests
         const itemToRemoveFromLock = {
             id,
             vid,

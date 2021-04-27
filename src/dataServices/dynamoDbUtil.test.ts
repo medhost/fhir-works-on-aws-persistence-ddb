@@ -4,7 +4,15 @@
  */
 
 import { clone } from 'fhir-works-on-aws-interface';
-import { DOCUMENT_STATUS_FIELD, DynamoDbUtil, LOCK_END_TS_FIELD, REFERENCES_FIELD, VID_FIELD } from './dynamoDbUtil';
+import {
+    DOCUMENT_STATUS_FIELD,
+    DynamoDbUtil,
+    EXTERNAL_ID_FIELD,
+    LOCK_END_TS_FIELD,
+    REFERENCES_FIELD,
+    VID_FIELD,
+    TENANT_ID,
+} from './dynamoDbUtil';
 import DOCUMENT_STATUS from './documentStatus';
 import { utcTimeRegExp } from '../../testUtilities/regExpressions';
 
@@ -51,6 +59,7 @@ describe('cleanItem', () => {
 describe('prepItemForDdbInsert', () => {
     const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
     const vid = 1;
+    const tenantId = 'tenant1';
     const resource = {
         resourceType: 'Patient',
         id,
@@ -70,6 +79,8 @@ describe('prepItemForDdbInsert', () => {
     const checkExpectedItemMatchActualItem = (actualItem: any, expectedResource: any, newVid: number) => {
         const expectedItem = clone(expectedResource);
         expectedItem[DOCUMENT_STATUS_FIELD] = DOCUMENT_STATUS.PENDING;
+        expectedItem[EXTERNAL_ID_FIELD] = id;
+        expectedItem[TENANT_ID] = tenantId;
         expectedItem.id = id;
         expectedItem.vid = newVid;
         expectedItem.meta = {
@@ -97,7 +108,13 @@ describe('prepItemForDdbInsert', () => {
         ];
 
         // OPERATE
-        const actualItem = DynamoDbUtil.prepItemForDdbInsert(updatedResource, id, vid, DOCUMENT_STATUS.PENDING);
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(
+            updatedResource,
+            id,
+            vid,
+            DOCUMENT_STATUS.PENDING,
+            tenantId,
+        );
 
         // CHECK
         updatedResource.meta.versionId = vid.toString();
@@ -136,7 +153,13 @@ describe('prepItemForDdbInsert', () => {
         };
 
         // OPERATE
-        const actualItem = DynamoDbUtil.prepItemForDdbInsert(updatedResource, id, vid, DOCUMENT_STATUS.PENDING);
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(
+            updatedResource,
+            id,
+            vid,
+            DOCUMENT_STATUS.PENDING,
+            tenantId,
+        );
 
         // CHECK
         updatedResource[REFERENCES_FIELD] = [patient];
@@ -148,7 +171,13 @@ describe('prepItemForDdbInsert', () => {
         const updatedResource = clone(resource);
 
         // OPERATE
-        const actualItem = DynamoDbUtil.prepItemForDdbInsert(updatedResource, id, vid, DOCUMENT_STATUS.PENDING);
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(
+            updatedResource,
+            id,
+            vid,
+            DOCUMENT_STATUS.PENDING,
+            tenantId,
+        );
 
         // CHECK
         updatedResource.meta.versionId = vid.toString();
@@ -162,7 +191,13 @@ describe('prepItemForDdbInsert', () => {
         delete updatedResource.meta;
 
         // OPERATE
-        const actualItem = DynamoDbUtil.prepItemForDdbInsert(updatedResource, id, vid, DOCUMENT_STATUS.PENDING);
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(
+            updatedResource,
+            id,
+            vid,
+            DOCUMENT_STATUS.PENDING,
+            tenantId,
+        );
 
         // CHECK
         updatedResource[REFERENCES_FIELD] = [];
@@ -175,7 +210,13 @@ describe('prepItemForDdbInsert', () => {
         delete updatedResource.meta.versionId;
 
         // OPERATE
-        const actualItem = DynamoDbUtil.prepItemForDdbInsert(updatedResource, id, vid, DOCUMENT_STATUS.PENDING);
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(
+            updatedResource,
+            id,
+            vid,
+            DOCUMENT_STATUS.PENDING,
+            tenantId,
+        );
 
         // CHECK
         updatedResource[REFERENCES_FIELD] = [];
@@ -189,7 +230,13 @@ describe('prepItemForDdbInsert', () => {
         const newVid = 3;
 
         // OPERATE
-        const actualItem = DynamoDbUtil.prepItemForDdbInsert(clone(resource), id, newVid, DOCUMENT_STATUS.PENDING);
+        const actualItem = DynamoDbUtil.prepItemForDdbInsert(
+            clone(resource),
+            id,
+            newVid,
+            DOCUMENT_STATUS.PENDING,
+            tenantId,
+        );
 
         // CHECK
         const expectedResource = clone(resource);

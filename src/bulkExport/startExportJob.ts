@@ -25,6 +25,7 @@ export const startExportJobHandler: Handler<
                 '--exportType': event.exportType,
                 '--transactionTime': event.transactionTime,
                 '--groupId': event.groupId!,
+                '--tenantId': event.tenantId!,
                 '--since': event.since!,
                 '--type': event.type!,
                 '--outputFormat': event.outputFormat!,

@@ -21,7 +21,7 @@ interface RequestResult {
 }
 
 export default class GenerateStagingRequestsFactory {
-    static getCreate(): RequestResult {
+    static getCreate(tableName: string): RequestResult {
         const createResource = {
             resourceType: 'Patient',
             name: [
@@ -45,7 +45,7 @@ export default class GenerateStagingRequestsFactory {
 
         const expectedRequest = {
             Put: {
-                TableName: '',
+                TableName: tableName,
                 Item: DynamoDBConverter.marshall(expectedCreateItem),
             },
         };
@@ -78,7 +78,7 @@ export default class GenerateStagingRequestsFactory {
         };
     }
 
-    static getRead(): RequestResult {
+    static getRead(tableName: string): RequestResult {
         const id = '47135b80-b721-430b-9d4b-1557edc64947';
         const request = {
             operation: 'read',
@@ -92,7 +92,7 @@ export default class GenerateStagingRequestsFactory {
 
         const expectedRequest = {
             Get: {
-                TableName: '',
+                TableName: tableName,
                 Key: {
                     id: {
                         S: id,
@@ -126,7 +126,7 @@ export default class GenerateStagingRequestsFactory {
         };
     }
 
-    static getUpdate(): RequestResult {
+    static getUpdate(tableName: string): RequestResult {
         const id = '8cafa46d-08b4-4ee4-b51b-803e20ae8126';
         const vid = 1;
         const nextVid = 2;
@@ -158,7 +158,7 @@ export default class GenerateStagingRequestsFactory {
 
         const expectedRequest = {
             Put: {
-                TableName: '',
+                TableName: tableName,
                 Item: DynamoDBConverter.marshall(expectedUpdateItem),
             },
         };
@@ -199,7 +199,7 @@ export default class GenerateStagingRequestsFactory {
         };
     }
 
-    static getDelete(): RequestResult {
+    static getDelete(tenantId: string): RequestResult {
         const id = 'bce8411e-c15e-448c-95dd-69155a837405';
         const resourceType = 'Patient';
         const request: BatchReadWriteRequest = {
@@ -217,6 +217,7 @@ export default class GenerateStagingRequestsFactory {
             id,
             vid,
             resourceType,
+            tenantId,
         );
 
         expectedRequest.Update.ExpressionAttributeValues[':currentTs'].N = expect.stringMatching(
