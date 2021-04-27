@@ -18,6 +18,7 @@ import {
     EXTERNAL_ID_FIELD,
     LOCK_END_TS_FIELD,
     REFERENCES_FIELD,
+    TENANT_ID,
     VID_FIELD,
 } from './dynamoDbUtil';
 // eslint-disable-next-line import/order
@@ -200,6 +201,7 @@ describe('atomicallyReadWriteResources', () => {
             insertedResourceJson[VID_FIELD] = 1;
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
+            insertedResourceJson[TENANT_ID] = '';
 
             const insertedResource = DynamoDBConverter.marshall(insertedResourceJson);
 
@@ -229,7 +231,7 @@ describe('atomicallyReadWriteResources', () => {
                         Update: {
                             TableName: '',
                             Key: {
-                                id: { S: 'bce8411e-c15e-448c-95dd-69155a837405' },
+                                id: { S: id },
                                 vid: { N: '1' },
                             },
                             UpdateExpression: 'set documentStatus = :newStatus, lockEndTs = :futureEndTs',
@@ -245,17 +247,23 @@ describe('atomicallyReadWriteResources', () => {
                     },
                 ],
             });
-
             expect(actualResponse).toStrictEqual({
                 message: 'Successfully committed requests to DB',
                 batchReadWriteResponses: [
                     {
-                        id: 'bce8411e-c15e-448c-95dd-69155a837405',
+                        id,
                         vid: '1',
                         operation: 'create',
                         lastModified: expect.stringMatching(utcTimeRegExp),
                         resourceType: 'Patient',
-                        resource: {},
+                        resource: {
+                            ...resource,
+                            id,
+                            meta: {
+                                lastUpdated: expect.stringMatching(utcTimeRegExp),
+                                versionId: '1',
+                            },
+                        },
                     },
                 ],
                 success: true,
@@ -360,6 +368,7 @@ describe('atomicallyReadWriteResources', () => {
             insertedResourceJson[DOCUMENT_STATUS_FIELD] = 'PENDING';
             insertedResourceJson[VID_FIELD] = newVid;
             insertedResourceJson[EXTERNAL_ID_FIELD] = id;
+            insertedResourceJson[TENANT_ID] = '';
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
 
@@ -431,7 +440,13 @@ describe('atomicallyReadWriteResources', () => {
                         operation: 'update',
                         lastModified: expect.stringMatching(utcTimeRegExp),
                         resourceType,
-                        resource: {},
+                        resource: {
+                            ...newResource,
+                            meta: {
+                                versionId: newVid.toString(),
+                                lastUpdated: expect.stringMatching(utcTimeRegExp),
+                            },
+                        },
                     },
                 ],
                 success: true,
