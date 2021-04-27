@@ -18,6 +18,7 @@ import {
     EXTERNAL_ID_FIELD,
     LOCK_END_TS_FIELD,
     REFERENCES_FIELD,
+    TENANT_ID,
     VID_FIELD,
 } from './dynamoDbUtil';
 // eslint-disable-next-line import/order
@@ -200,6 +201,7 @@ describe('atomicallyReadWriteResources', () => {
             insertedResourceJson[VID_FIELD] = 1;
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
+            insertedResourceJson[TENANT_ID] = '';
 
             const insertedResource = DynamoDBConverter.marshall(insertedResourceJson);
 
@@ -260,7 +262,6 @@ describe('atomicallyReadWriteResources', () => {
                             meta: {
                                 lastUpdated: expect.stringMatching(utcTimeRegExp),
                                 versionId: '1',
-                                security: 'gondor',
                             },
                         },
                     },
@@ -367,6 +368,7 @@ describe('atomicallyReadWriteResources', () => {
             insertedResourceJson[DOCUMENT_STATUS_FIELD] = 'PENDING';
             insertedResourceJson[VID_FIELD] = newVid;
             insertedResourceJson[EXTERNAL_ID_FIELD] = id;
+            insertedResourceJson[TENANT_ID] = '';
             insertedResourceJson[REFERENCES_FIELD] = shouldReqHasReferences ? [organization] : [];
             insertedResourceJson[LOCK_END_TS_FIELD] = Date.now();
 
@@ -443,7 +445,6 @@ describe('atomicallyReadWriteResources', () => {
                             meta: {
                                 versionId: newVid.toString(),
                                 lastUpdated: expect.stringMatching(utcTimeRegExp),
-                                security: 'skynet',
                             },
                         },
                     },

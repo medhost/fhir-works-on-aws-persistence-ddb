@@ -217,6 +217,9 @@ describe('buildPutAvailableItemParam', () => {
                     resourceType: {
                         S: 'Patient',
                     },
+                    tenantId: {
+                        S: tenantId,
+                    },
                     id: {
                         S: id,
                     },
@@ -298,6 +301,9 @@ describe('buildPutAvailableItemParam', () => {
                 },
                 resourceType: {
                     S: 'Patient',
+                },
+                tenantId: {
+                    S: '123',
                 },
                 id: {
                     S: id,
